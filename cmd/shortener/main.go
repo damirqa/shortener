@@ -71,13 +71,13 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	shortURL := generateShortURL()
 	store.Set(shortURL, string(link))
 
-	fullUrl := fmt.Append([]byte("localhost:3000/"), shortURL)
+	fullURL := fmt.Append([]byte("localhost:8080/"), shortURL)
 
 	w.Header().Set("Content-Type:", "text/plain")
-	w.Header().Set("Content-Length", strconv.Itoa(len(fullUrl)))
+	w.Header().Set("Content-Length", strconv.Itoa(len(fullURL)))
 	w.WriteHeader(http.StatusCreated)
 
-	_, err = w.Write(fullUrl)
+	_, err = w.Write(fullURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
