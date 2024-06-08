@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +11,10 @@ func TestGenerate(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", generate)
 
-	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString("https://practicum.yandex.ru"))
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	req, err := http.NewRequest(http.MethodPost, server.URL+"/", bytes.NewBufferString("https://practicum.yandex.ru"))
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
@@ -37,7 +39,10 @@ func TestGen(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", get)
 
-	req, err := http.NewRequest(http.MethodGet, string(fmt.Append([]byte("/"), shortURL)), nil)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	req, err := http.NewRequest(http.MethodGet, server.URL+"/"+shortURL, nil)
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}

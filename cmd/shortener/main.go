@@ -21,7 +21,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler)
 
-	err := http.ListenAndServe(`:3000`, mux)
+	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -71,7 +71,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	shortURL := generateShortURL()
 	store.Set(shortURL, string(link))
 
-	fullURL := fmt.Append([]byte("127.0.0.1:8080/"), shortURL)
+	fullURL := fmt.Append([]byte("http://127.0.0.1:8080/"), shortURL)
 
 	w.Header().Set("Content-Type:", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len(fullURL)))
