@@ -40,7 +40,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 		if count > 0 {
 			if r.Method == http.MethodGet {
-				get(w, r, splitPath[0])
+				get(w, r)
 				return
 			}
 
@@ -71,7 +71,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	shortURL := generateShortURL()
 	store.Set(shortURL, string(link))
 
-	fullURL := fmt.Append([]byte("localhost:8080/"), shortURL)
+	fullURL := fmt.Append([]byte("127.0.0.1:8080/"), shortURL)
 
 	w.Header().Set("Content-Type:", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len(fullURL)))
@@ -83,8 +83,11 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func get(w http.ResponseWriter, r *http.Request, path string) {
-	longURL, exist := store.urls[path]
+func get(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	trimmedPath := strings.Trim(path, "/")
+
+	longURL, exist := store.urls[trimmedPath]
 
 	if !exist {
 		http.Error(w, "URL not found", http.StatusBadRequest)
