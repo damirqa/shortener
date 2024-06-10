@@ -1,25 +1,27 @@
-package url
+package url_test
 
 import (
 	"bytes"
-	urlDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
-	urlDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
+	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"net/http"
 
 	"github.com/damirqa/shortener/internal/handlers"
-	"net/http"
+	"github.com/gorilla/mux"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestGenerate(t *testing.T) {
-	repo := urlDomainLocalRepository.New()
-	service := urlDomainService.New(repo)
-	useCase := New(service)
+	repo := URLDomainLocalRepository.New()
+	service := URLDomainService.New(repo)
+	useCase := URLUseCase.New(service)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handlers.Shorten(useCase))
+	router := mux.NewRouter()
+	router.HandleFunc("/", handlers.Shorten(useCase)).Methods("POST")
 
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(router)
 	defer server.Close()
 
 	req, err := http.NewRequest(http.MethodPost, server.URL+"/", bytes.NewBufferString("https://practicum.yandex.ru"))
@@ -29,7 +31,7 @@ func TestGenerate(t *testing.T) {
 
 	res := httptest.NewRecorder()
 
-	mux.ServeHTTP(res, req)
+	router.ServeHTTP(res, req)
 
 	if status := res.Code; status != http.StatusCreated {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)
@@ -37,19 +39,19 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	repo := urlDomainLocalRepository.New()
-	service := urlDomainService.New(repo)
-	useCase := New(service)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handlers.Expand(useCase))
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	repo := URLDomainLocalRepository.New()
+	service := URLDomainService.New(repo)
+	useCase := URLUseCase.New(service)
 
 	longURL := "http://detnkjoidndxr.ru/juc2om4xf"
 	shortURL := service.GenerateShortURL()
 	repo.Insert(shortURL, longURL)
+
+	router := mux.NewRouter()
+	router.HandleFunc("/{id}", handlers.Expand(useCase)).Methods("GET")
+
+	server := httptest.NewServer(router)
+	defer server.Close()
 
 	req, err := http.NewRequest(http.MethodGet, server.URL+"/"+shortURL, nil)
 	if err != nil {
@@ -58,7 +60,7 @@ func TestGet(t *testing.T) {
 
 	res := httptest.NewRecorder()
 
-	mux.ServeHTTP(res, req)
+	router.ServeHTTP(res, req)
 
 	if status := res.Code; status != http.StatusTemporaryRedirect {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusTemporaryRedirect, status)

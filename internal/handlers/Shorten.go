@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	urlUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"io"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
 )
 
-func Shorten(useCase urlUseCase.ServiceInterface) http.HandlerFunc {
+func Shorten(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		longURL, err := io.ReadAll(r.Body)
 		if err != nil {

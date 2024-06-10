@@ -7,18 +7,18 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 
-	urlDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
-	urlDomainService "github.com/damirqa/shortener/internal/domain/url/service"
-	urlUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
+	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 )
 
 type App struct {
 	httpServer *http.Server
 
 	// url
-	UrlDomainService    *urlDomainService.Service
-	UrlDomainRepository *urlDomainLocalRepository.Local
-	UrlUseCase          *urlUseCase.UseCase
+	URLDomainService    *URLDomainService.Service
+	URLDomainRepository *URLDomainLocalRepository.Local
+	URLUseCase          *URLUseCase.UseCase
 
 	// use cases
 	UseCases *usecase.UseCases
@@ -27,15 +27,15 @@ type App struct {
 func (app *App) Init() {
 	// url
 	{
-		app.UrlDomainRepository = urlDomainLocalRepository.New()
-		app.UrlDomainService = urlDomainService.New(app.UrlDomainRepository)
-		app.UrlUseCase = urlUseCase.New(app.UrlDomainService)
+		app.URLDomainRepository = URLDomainLocalRepository.New()
+		app.URLDomainService = URLDomainService.New(app.URLDomainRepository)
+		app.URLUseCase = URLUseCase.New(app.URLDomainService)
 	}
 
 	// use cases
 	{
 		app.UseCases = &usecase.UseCases{
-			URLUseCase: app.UrlUseCase,
+			URLUseCase: app.URLUseCase,
 		}
 	}
 

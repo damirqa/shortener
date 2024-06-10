@@ -2,14 +2,14 @@ package url
 
 import (
 	"fmt"
-	urlDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 )
 
 type UseCase struct {
-	service urlDomainService.BaseDomainService
+	service URLDomainService.BaseDomainService
 }
 
-func New(service urlDomainService.BaseDomainService) *UseCase {
+func New(service URLDomainService.BaseDomainService) *UseCase {
 	return &UseCase{
 		service: service,
 	}

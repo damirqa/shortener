@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	urlUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-func Expand(useCase urlUseCase.ServiceInterface) http.HandlerFunc {
+func Expand(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		shortURL := vars["id"]
