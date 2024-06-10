@@ -1,15 +1,23 @@
-package main
+package url
 
 import (
 	"bytes"
+	urlDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
+	urlDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+
+	"github.com/damirqa/shortener/internal/handlers"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestGenerate(t *testing.T) {
+	repo := urlDomainLocalRepository.New()
+	service := urlDomainService.New(repo)
+	useCase := New(service)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", generate)
+	mux.HandleFunc("/", handlers.Shorten(useCase))
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -28,19 +36,20 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGen(t *testing.T) {
-	store = newURLStore()
-
-	longURL := "http://detnkjoidndxr.ru/juc2om4xf"
-	shortURL := generateShortURL()
-
-	store.Set(shortURL, longURL)
+func TestGet(t *testing.T) {
+	repo := urlDomainLocalRepository.New()
+	service := urlDomainService.New(repo)
+	useCase := New(service)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", get)
+	mux.HandleFunc("/", handlers.Expand(useCase))
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
+
+	longURL := "http://detnkjoidndxr.ru/juc2om4xf"
+	shortURL := service.GenerateShortURL()
+	repo.Insert(shortURL, longURL)
 
 	req, err := http.NewRequest(http.MethodGet, server.URL+"/"+shortURL, nil)
 	if err != nil {
