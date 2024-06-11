@@ -6,7 +6,6 @@ import (
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/usecase"
 	"github.com/gorilla/mux"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -52,16 +51,11 @@ func (app *App) Init() {
 	{
 		address := fmt.Sprintf("%s:%s", config.FlagRunAddr, config.FlagRunPort)
 
-		timeout := 10 * time.Second
-		conn, err := net.DialTimeout("tcp", address, timeout)
-		if err != nil {
-			log.Printf("Port %s is available, starting server...\n", config.FlagRunPort)
-		} else {
-			err := conn.Close()
-			if err != nil {
-				_ = fmt.Errorf(err.Error())
+		for {
+			if isPortAvailable(address) {
+				break
 			}
-			log.Fatalf("Port %s is already in use.\n", config.FlagRunPort)
+			time.Sleep(2 * time.Second) // Ждать 2 секунды перед следующей проверкой
 		}
 
 		router := mux.NewRouter()
@@ -84,4 +78,13 @@ func (app *App) Start() {
 			panic(err)
 		}
 	}
+}
+
+func isPortAvailable(address string) bool {
+	conn, err := net.DialTimeout("tcp", address, 1*time.Second)
+	if err != nil {
+		return true // Порт доступен
+	}
+	conn.Close()
+	return false // Порт занят
 }
