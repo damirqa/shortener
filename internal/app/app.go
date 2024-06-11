@@ -50,15 +50,18 @@ func (app *App) Init() {
 
 	// http server
 	{
-		address := fmt.Sprintf("%s:%d", config.FlagRunAddr, config.FlagRunPort)
+		address := fmt.Sprintf("%s:%s", config.FlagRunAddr, config.FlagRunPort)
 
 		timeout := 10 * time.Second
 		conn, err := net.DialTimeout("tcp", address, timeout)
 		if err != nil {
-			log.Printf("Port %d is available, starting server...\n", config.FlagRunPort)
+			log.Printf("Port %s is available, starting server...\n", config.FlagRunPort)
 		} else {
-			conn.Close()
-			log.Fatalf("Port %d is already in use.\n", config.FlagRunPort)
+			err := conn.Close()
+			if err != nil {
+				_ = fmt.Errorf(err.Error())
+			}
+			log.Fatalf("Port %s is already in use.\n", config.FlagRunPort)
 		}
 
 		router := mux.NewRouter()
