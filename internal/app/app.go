@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/usecase"
 	"github.com/gorilla/mux"
@@ -25,6 +26,11 @@ type App struct {
 }
 
 func (app *App) Init() {
+	//config
+	{
+		config.ParseFlags()
+	}
+
 	// url
 	{
 		app.URLDomainRepository = URLDomainLocalRepository.New()
@@ -45,7 +51,7 @@ func (app *App) Init() {
 		handlers.RegisterHandlers(router, app.UseCases)
 
 		app.httpServer = &http.Server{
-			Addr:    "127.0.0.1:8080",
+			Addr:    config.FlagRunAddr + config.FlagRunPort,
 			Handler: router,
 		}
 	}
