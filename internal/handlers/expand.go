@@ -17,6 +17,6 @@ func Expand(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, longURL.GetLink(), http.StatusTemporaryRedirect)
 	}
 }

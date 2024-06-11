@@ -2,6 +2,7 @@ package url_test
 
 import (
 	"bytes"
+	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
@@ -43,9 +44,9 @@ func TestGet(t *testing.T) {
 	service := URLDomainService.New(repo)
 	useCase := URLUseCase.New(service)
 
-	longURL := "http://detnkjoidndxr.ru/juc2om4xf"
+	longURL := URLDomainEntity.New("http://detnkjoidndxr.ru/juc2om4xf")
 	shortURL := service.GenerateShortURL()
-	repo.Insert(shortURL, longURL)
+	repo.Insert(shortURL.GetLink(), *longURL)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/{id}", handlers.Expand(useCase)).Methods("GET")
@@ -53,7 +54,7 @@ func TestGet(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	req, err := http.NewRequest(http.MethodGet, server.URL+"/"+shortURL, nil)
+	req, err := http.NewRequest(http.MethodGet, server.URL+"/"+shortURL.GetLink(), nil)
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}
@@ -66,7 +67,7 @@ func TestGet(t *testing.T) {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusTemporaryRedirect, status)
 	}
 
-	if location := res.Header().Get("Location"); location != longURL {
+	if location := res.Header().Get("Location"); location != longURL.GetLink() {
 		t.Errorf("Ожидался Location %s, но получен %s", longURL, location)
 	}
 }

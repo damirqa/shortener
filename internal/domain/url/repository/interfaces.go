@@ -1,6 +1,8 @@
 package repository
 
+import "github.com/damirqa/shortener/internal/domain/url/entity"
+
 type Repo interface {
-	Insert(key, value string)
-	Get(key string) (string, bool)
+	Insert(key string, value entity.URL)
+	Get(key string) (entity.URL, bool)
 }
