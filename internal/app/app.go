@@ -6,7 +6,10 @@ import (
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/usecase"
 	"github.com/gorilla/mux"
+	"log"
+	"net"
 	"net/http"
+	"time"
 
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
@@ -47,6 +50,17 @@ func (app *App) Init() {
 
 	// http server
 	{
+		address := fmt.Sprintf("%s:%d", config.FlagRunAddr, config.FlagRunPort)
+
+		timeout := 10 * time.Second
+		conn, err := net.DialTimeout("tcp", address, timeout)
+		if err != nil {
+			log.Printf("Port %d is available, starting server...\n", config.FlagRunPort)
+		} else {
+			conn.Close()
+			log.Fatalf("Port %d is already in use.\n", config.FlagRunPort)
+		}
+
 		router := mux.NewRouter()
 		handlers.RegisterHandlers(router, app.UseCases)
 
