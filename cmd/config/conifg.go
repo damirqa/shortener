@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"os"
 	"sync"
 )
 
@@ -18,13 +19,21 @@ var (
 func Init() *Config {
 	once.Do(func() {
 		address := flag.String("a", "localhost:8080", "Address for the server")
-		port := flag.String("b", "http://localhost:8000", "Port for the server")
+		baseURL := flag.String("b", "http://localhost:8000", "Port for the server")
 
 		flag.Parse()
 
+		if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
+			address = &envRunAddr
+		}
+
+		if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+			baseURL = &envBaseURL
+		}
+
 		ConfigInstance = &Config{
 			Address:       *address,
-			ResultAddress: *port,
+			ResultAddress: *baseURL,
 		}
 	})
 	return ConfigInstance
