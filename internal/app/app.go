@@ -50,7 +50,7 @@ func (app *App) Init() {
 		handlers.RegisterHandlers(router, app.UseCases)
 
 		app.httpServer = &http.Server{
-			Addr:    config.Config.Address + config.Config.Port,
+			Addr:    config.Config.Address + ":" + config.Config.Port,
 			Handler: router,
 		}
 	}
