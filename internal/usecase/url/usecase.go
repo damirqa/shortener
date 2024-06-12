@@ -22,7 +22,7 @@ func (u UseCase) Generate(longURL string) []byte {
 	shortURLEntity := u.service.GenerateShortURL()
 	u.service.SaveURL(shortURLEntity, longURLEntity)
 
-	fullURL := fmt.Append([]byte(config.Config.Address+config.Config.Port+"/"), shortURLEntity.GetLink())
+	fullURL := fmt.Append([]byte("http://"+config.Config.Address+config.Config.Port+"/"), shortURLEntity.GetLink())
 
 	return fullURL
 }

@@ -16,6 +16,13 @@ func Shorten(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 			return
 		}
 
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				panic(err)
+			}
+		}(r.Body)
+
 		shortURL := useCase.Generate(string(longURL))
 
 		w.Header().Set("Content-Type:", "text/plain")
