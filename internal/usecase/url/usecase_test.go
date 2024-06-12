@@ -2,19 +2,14 @@ package url_test
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
-	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
-	"net"
-	"net/http"
-	"time"
-
 	"github.com/damirqa/shortener/internal/handlers"
+	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"github.com/gorilla/mux"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -32,28 +27,8 @@ func TestGenerate(t *testing.T) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", handlers.Shorten(useCase)).Methods("POST")
 
-	server := http.Server{
-		Addr:    config.Config.Address + ":" + config.Config.Port,
-		Handler: router,
-	}
-
-	defer func(server *http.Server) {
-		err := server.Close()
-		if err != nil {
-
-		}
-	}(&server)
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			t.Errorf("Не удалось запустить сервер: %v", err)
-			return
-		}
-	}()
-
-	if err := waitForPort(config.Config.Address, config.Config.Port, 10*time.Second); err != nil {
-		t.Fatalf("Не удалось дождаться пока порт %s станет доступен для запроса: %v", config.Config.Port, err)
-	}
+	server := httptest.NewServer(router)
+	defer server.Close()
 
 	req, err := http.NewRequest(http.MethodPost, "http://"+config.Config.Address+":"+config.Config.Port+"/", bytes.NewBufferString("https://practicum.yandex.ru"))
 	if err != nil {
@@ -81,28 +56,8 @@ func TestGet(t *testing.T) {
 	router := mux.NewRouter()
 	router.HandleFunc("/{id}", handlers.Expand(useCase)).Methods("GET")
 
-	server := http.Server{
-		Addr:    config.Config.Address + ":" + config.Config.Port,
-		Handler: router,
-	}
-
-	defer func(server *http.Server) {
-		err := server.Close()
-		if err != nil {
-
-		}
-	}(&server)
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			t.Errorf("Не удалось запустить сервер: %v", err)
-			return
-		}
-	}()
-
-	if err := waitForPort(config.Config.Address, config.Config.Port, 10*time.Second); err != nil {
-		t.Fatalf("Не удалось дождаться пока порт %s станет доступен для запроса: %v", config.Config.Port, err)
-	}
+	server := httptest.NewServer(router)
+	defer server.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://"+config.Config.Address+":"+config.Config.Port+"/"+shortURL.GetLink(), nil)
 	if err != nil {
@@ -120,21 +75,4 @@ func TestGet(t *testing.T) {
 	if location := res.Header().Get("Location"); location != longURL.GetLink() {
 		t.Errorf("Ожидался Location %s, но получен %s", longURL, location)
 	}
-}
-
-func waitForPort(host string, port string, timeout time.Duration) error {
-	address := net.JoinHostPort(host, port)
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", address, 1*time.Second)
-		if err == nil {
-			err := conn.Close()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	return fmt.Errorf("не удалось дождаться пока порт %s станет доступен для запроса", port)
 }
