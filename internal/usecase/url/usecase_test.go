@@ -32,7 +32,7 @@ func TestGenerate(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	req, err := http.NewRequest(http.MethodPost, "http://"+cfg.GetFullAddress()+"/", bytes.NewBufferString("https://practicum.yandex.ru"))
+	req, err := http.NewRequest(http.MethodPost, "http://"+cfg.GetAddress()+"/", bytes.NewBufferString("https://practicum.yandex.ru"))
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestGet(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetFullAddress()+"/"+shortURL.GetLink(), nil)
+	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetAddress()+"/"+shortURL.GetLink(), nil)
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}
