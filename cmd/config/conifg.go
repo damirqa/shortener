@@ -6,8 +6,8 @@ import (
 )
 
 type Config struct {
-	Address string
-	Port    string
+	Address       string
+	ResultAddress string
 }
 
 var (
@@ -17,19 +17,23 @@ var (
 
 func Init() *Config {
 	once.Do(func() {
-		address := flag.String("b", "localhost", "Address for the server")
-		port := flag.String("a", "8080", "Port for the server")
+		address := flag.String("a", "localhost:8080", "Address for the server")
+		port := flag.String("b", "http://localhost:8000", "Port for the server")
 
 		flag.Parse()
 
 		ConfigInstance = &Config{
-			Address: *address,
-			Port:    *port,
+			Address:       *address,
+			ResultAddress: *port,
 		}
 	})
 	return ConfigInstance
 }
 
-func (c *Config) GetFullAddress() string {
-	return c.Address + ":" + c.Port
+func (c *Config) GetAddress() string {
+	return c.Address
+}
+
+func (c *Config) GetResultAddress() string {
+	return c.Address
 }
