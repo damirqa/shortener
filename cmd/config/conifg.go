@@ -1,14 +1,35 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"sync"
+)
 
-var Config = struct {
+type Config struct {
 	Address string
 	Port    string
-}{}
+}
 
-func Init() {
-	flag.StringVar(&Config.Address, "b", "localhost", "address to run server")
-	flag.StringVar(&Config.Port, "a", "8080", "port to run server")
-	flag.Parse()
+var (
+	ConfigInstance *Config
+	once           sync.Once
+)
+
+func Init() *Config {
+	once.Do(func() {
+		address := flag.String("b", "localhost", "Address for the server")
+		port := flag.String("a", "8081", "Port for the server")
+
+		flag.Parse()
+
+		ConfigInstance = &Config{
+			Address: *address,
+			Port:    *port,
+		}
+	})
+	return ConfigInstance
+}
+
+func (c *Config) GetFullAddress() string {
+	return c.Address + ":" + c.Port
 }

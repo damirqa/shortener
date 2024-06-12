@@ -27,7 +27,7 @@ type App struct {
 func (app *App) Init() {
 	//config
 	{
-		config.Init()
+		config.ConfigInstance = config.Init()
 	}
 
 	// url
@@ -50,7 +50,7 @@ func (app *App) Init() {
 		handlers.RegisterHandlers(router, app.UseCases)
 
 		app.httpServer = &http.Server{
-			Addr:    config.Config.Address + ":" + config.Config.Port,
+			Addr:    config.ConfigInstance.GetFullAddress(),
 			Handler: router,
 		}
 	}
