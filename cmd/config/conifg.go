@@ -9,6 +9,6 @@ var Config = struct {
 
 func Init() {
 	flag.StringVar(&Config.Address, "b", "localhost", "address to run server")
-	flag.StringVar(&Config.Port, "a", ":8080", "port to run server")
+	flag.StringVar(&Config.Port, "a", "8080", "port to run server")
 	flag.Parse()
 }
