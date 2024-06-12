@@ -18,7 +18,7 @@ var (
 func Init() *Config {
 	once.Do(func() {
 		address := flag.String("b", "localhost", "Address for the server")
-		port := flag.String("a", "8081", "Port for the server")
+		port := flag.String("a", "8080", "Port for the server")
 
 		flag.Parse()
 
