@@ -2,12 +2,13 @@ package config
 
 import "flag"
 
-var FlagRunPort string
-var FlagRunAddr string
+var Config = struct {
+	Address string
+	Port    string
+}{}
 
-func ParseFlags() {
-	flag.StringVar(&FlagRunAddr, "b", "localhost", "address to run server")
-	flag.StringVar(&FlagRunPort, "a", ":8080", "port to run server")
-	// парсим переданные серверу аргументы в зарегистрированные переменные
+func Init() {
+	flag.StringVar(&Config.Address, "b", "localhost", "address to run server")
+	flag.StringVar(&Config.Port, "a", ":8080", "port to run server")
 	flag.Parse()
 }

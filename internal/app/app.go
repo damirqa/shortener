@@ -3,16 +3,13 @@ package app
 import (
 	"fmt"
 	"github.com/damirqa/shortener/cmd/config"
-	"github.com/damirqa/shortener/internal/handlers"
-	"github.com/damirqa/shortener/internal/usecase"
-	"github.com/gorilla/mux"
-	"net"
-	"net/http"
-	"time"
-
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	"github.com/damirqa/shortener/internal/handlers"
+	"github.com/damirqa/shortener/internal/usecase"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"github.com/gorilla/mux"
+	"net/http"
 )
 
 type App struct {
@@ -30,7 +27,7 @@ type App struct {
 func (app *App) Init() {
 	//config
 	{
-		config.ParseFlags()
+		config.Init()
 	}
 
 	// url
@@ -49,20 +46,11 @@ func (app *App) Init() {
 
 	// http server
 	{
-		address := fmt.Sprintf("%s:%s", config.FlagRunAddr, config.FlagRunPort)
-
-		for {
-			if isPortAvailable(address) {
-				break
-			}
-			time.Sleep(2 * time.Second) // Ждать 2 секунды перед следующей проверкой
-		}
-
 		router := mux.NewRouter()
 		handlers.RegisterHandlers(router, app.UseCases)
 
 		app.httpServer = &http.Server{
-			Addr:    config.FlagRunAddr + config.FlagRunPort,
+			Addr:    config.Config.Address + config.Config.Port,
 			Handler: router,
 		}
 	}
@@ -78,13 +66,4 @@ func (app *App) Start() {
 			panic(err)
 		}
 	}
-}
-
-func isPortAvailable(address string) bool {
-	conn, err := net.DialTimeout("tcp", address, 1*time.Second)
-	if err != nil {
-		return true // Порт доступен
-	}
-	conn.Close()
-	return false // Порт занят
 }

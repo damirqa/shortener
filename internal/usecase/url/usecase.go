@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 )
@@ -21,7 +22,7 @@ func (u UseCase) Generate(longURL string) []byte {
 	shortURLEntity := u.service.GenerateShortURL()
 	u.service.SaveURL(shortURLEntity, longURLEntity)
 
-	fullURL := fmt.Append([]byte("http://127.0.0.1:8080/"), shortURLEntity.GetLink())
+	fullURL := fmt.Append([]byte(config.Config.Address+config.Config.Port+"/"), shortURLEntity.GetLink())
 
 	return fullURL
 }
