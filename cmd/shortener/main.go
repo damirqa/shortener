@@ -1,3 +1,11 @@
 package main
 
-func main() {}
+import (
+	"github.com/damirqa/shortener/internal/app"
+)
+
+func main() {
+	a := &app.App{}
+	a.Init()
+	a.Start()
+}
