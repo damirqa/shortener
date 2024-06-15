@@ -21,7 +21,7 @@ func Init() *Config {
 		var address, baseURL string
 
 		flag.StringVar(&address, "a", "localhost:8080", "Address for the server")
-		flag.StringVar(&baseURL, "b", "http://localhost:8000", "Port for the server")
+		flag.StringVar(&baseURL, "b", "http://localhost:8080", "Port for the server")
 
 		flag.Parse()
 
