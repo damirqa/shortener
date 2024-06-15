@@ -1,37 +1,44 @@
 package service
 
 import (
+	"crypto/rand"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
 	"github.com/damirqa/shortener/internal/domain/url/repository"
-	"math/rand"
+	"log"
+	"math/big"
 )
 
-type Service struct {
-	repo repository.Repo
+type URLService struct {
+	repo repository.URLRepository
 }
 
-func New(repo repository.Repo) *Service {
-	return &Service{
+func New(repo repository.URLRepository) *URLService {
+	return &URLService{
 		repo: repo,
 	}
 }
 
-func (s *Service) SaveURL(shortURL, longURL *entity.URL) {
-	s.repo.Insert(shortURL.GetLink(), *longURL)
+func (s *URLService) SaveURL(shortURL, longURL *entity.URL) {
+	s.repo.Insert(shortURL.Link, *longURL)
 }
 
-func (s *Service) GenerateShortURL() *entity.URL {
+func (s *URLService) GenerateShortURL() *entity.URL {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, 6)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			log.Fatalf("Problem with generate short URL: %v", err)
+		}
+
+		b[i] = letters[index.Int64()]
 	}
 
 	return entity.New(string(b))
 }
 
-func (s *Service) Get(shortURL *entity.URL) (entity.URL, bool) {
-	longURL, exist := s.repo.Get(shortURL.GetLink())
+func (s *URLService) Get(shortURL *entity.URL) (entity.URL, bool) {
+	longURL, exist := s.repo.Get(shortURL.Link)
 
 	return longURL, exist
 }

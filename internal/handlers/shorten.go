@@ -3,12 +3,13 @@ package handlers
 import (
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
 )
 
-func Shorten(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
+func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		longURL, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -19,13 +20,13 @@ func Shorten(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-				panic(err)
+				log.Fatalf("Error closing request body: %v", err)
 			}
 		}(r.Body)
 
 		shortURL := useCase.Generate(string(longURL))
 
-		w.Header().Set("Content-Type:", "text/plain")
+		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Content-Length", strconv.Itoa(utf8.RuneCount(shortURL)))
 		w.WriteHeader(http.StatusCreated)
 

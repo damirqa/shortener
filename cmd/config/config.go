@@ -12,31 +12,33 @@ type Config struct {
 }
 
 var (
-	ConfigInstance *Config
-	once           sync.Once
+	Instance *Config
+	once     sync.Once
 )
 
 func Init() *Config {
 	once.Do(func() {
-		address := flag.String("a", "localhost:8080", "Address for the server")
-		baseURL := flag.String("b", "http://localhost:8000", "Port for the server")
+		var address, baseURL string
+
+		flag.StringVar(&address, "a", "localhost:8080", "Address for the server")
+		flag.StringVar(&baseURL, "b", "http://localhost:8000", "Port for the server")
 
 		flag.Parse()
 
 		if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
-			address = &envRunAddr
+			address = envRunAddr
 		}
 
 		if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-			baseURL = &envBaseURL
+			baseURL = envBaseURL
 		}
 
-		ConfigInstance = &Config{
-			Address:       *address,
-			ResultAddress: *baseURL,
+		Instance = &Config{
+			Address:       address,
+			ResultAddress: baseURL,
 		}
 	})
-	return ConfigInstance
+	return Instance
 }
 
 func (c *Config) GetAddress() string {
@@ -44,5 +46,5 @@ func (c *Config) GetAddress() string {
 }
 
 func (c *Config) GetResultAddress() string {
-	return c.Address
+	return c.ResultAddress
 }

@@ -27,8 +27,9 @@ func TestGenerate(t *testing.T) {
 	useCase := URLUseCase.New(service)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", handlers.Shorten(useCase)).Methods("POST")
+	router.HandleFunc("/", handlers.ShortenURL(useCase)).Methods("POST")
 
+	// todo: как-то проверить, что он закрылся
 	server := httptest.NewServer(router)
 	defer server.Close()
 
@@ -55,15 +56,16 @@ func TestGet(t *testing.T) {
 
 	longURL := URLDomainEntity.New("http://detnkjoidndxr.ru/juc2om4xf")
 	shortURL := service.GenerateShortURL()
-	repo.Insert(shortURL.GetLink(), *longURL)
+	repo.Insert(shortURL.Link, *longURL)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/{id}", handlers.Expand(useCase)).Methods("GET")
+	router.HandleFunc("/{id}", handlers.ExpandURL(useCase)).Methods("GET")
 
+	// todo: как-то проверить, что он закрылся
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetAddress()+"/"+shortURL.GetLink(), nil)
+	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetAddress()+"/"+shortURL.Link, nil)
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}
@@ -76,7 +78,7 @@ func TestGet(t *testing.T) {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusTemporaryRedirect, status)
 	}
 
-	if location := res.Header().Get("Location"); location != longURL.GetLink() {
+	if location := res.Header().Get("Location"); location != longURL.Link {
 		t.Errorf("Ожидался Location %s, но получен %s", longURL, location)
 	}
 }

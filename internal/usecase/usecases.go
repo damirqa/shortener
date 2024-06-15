@@ -5,5 +5,5 @@ import (
 )
 
 type UseCases struct {
-	URLUseCase URLUseCase.ServiceInterface
+	URLUseCase URLUseCase.UseCaseInterface
 }

@@ -1,15 +1,11 @@
 package entity
 
 type URL struct {
-	link string
+	Link string
 }
 
 func New(link string) *URL {
 	return &URL{
-		link: link,
+		Link: link,
 	}
-}
-
-func (u *URL) GetLink() string {
-	return u.link
 }

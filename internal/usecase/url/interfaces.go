@@ -2,7 +2,7 @@ package url
 
 import "github.com/damirqa/shortener/internal/domain/url/entity"
 
-type ServiceInterface interface {
+type UseCaseInterface interface {
 	Generate(longURL string) []byte
 	Get(shortURL string) (entity.URL, bool)
 }

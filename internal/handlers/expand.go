@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func Expand(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
+func ExpandURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		shortURL := vars["id"]
@@ -17,6 +17,6 @@ func Expand(useCase URLUseCase.ServiceInterface) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, longURL.GetLink(), http.StatusTemporaryRedirect)
+		http.Redirect(w, r, longURL.Link, http.StatusTemporaryRedirect)
 	}
 }

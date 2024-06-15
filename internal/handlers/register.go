@@ -6,6 +6,6 @@ import (
 )
 
 func RegisterHandlers(router *mux.Router, useCases *usecase.UseCases) {
-	router.HandleFunc("/", Shorten(useCases.URLUseCase)).Methods("POST")
-	router.HandleFunc("/{id}", Expand(useCases.URLUseCase)).Methods("GET")
+	router.HandleFunc("/", ShortenURL(useCases.URLUseCase)).Methods("POST")
+	router.HandleFunc("/{id}", ExpandURL(useCases.URLUseCase)).Methods("GET")
 }
