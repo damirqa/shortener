@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 
 	"github.com/damirqa/shortener/cmd/config"
@@ -11,6 +13,7 @@ import (
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 
 	"github.com/damirqa/shortener/internal/handlers"
+	"github.com/damirqa/shortener/internal/middleware"
 	"github.com/damirqa/shortener/internal/usecase"
 )
 
@@ -28,6 +31,7 @@ type App struct {
 
 func (app *App) Init() {
 	app.initConfig()
+	app.initLogger()
 	app.initURL()
 	app.initUseCases()
 	app.initHTTPServer()
@@ -35,6 +39,12 @@ func (app *App) Init() {
 
 func (app *App) initConfig() {
 	config.Instance = config.Init()
+}
+
+func (app *App) initLogger() {
+	if err := logger.Initialize(config.Instance.FlagLogLevel); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (app *App) initURL() {
@@ -51,6 +61,7 @@ func (app *App) initUseCases() {
 
 func (app *App) initHTTPServer() {
 	router := mux.NewRouter()
+	router.Use(middleware.LogMW)
 	handlers.RegisterHandlers(router, app.UseCases)
 
 	app.httpServer = &http.Server{
