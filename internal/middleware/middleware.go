@@ -37,7 +37,6 @@ func LogMW(next http.Handler) http.Handler {
 
 		log.Printf("%s - %s (%s)", r.Method, r.URL.Path, r.RemoteAddr)
 
-		// compare the return-value to the authMW
 		next.ServeHTTP(lw, r)
 
 		duration := time.Since(start)
