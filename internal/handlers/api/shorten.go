@@ -33,7 +33,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 		}
 
-		writer.Header().Set("Content-Type", "text/plain")
+		writer.Header().Set("Content-Type", "application/json")
 		writer.Header().Set("Content-Length", strconv.Itoa(utf8.RuneCount(resp)))
 		writer.WriteHeader(http.StatusCreated)
 
