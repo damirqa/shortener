@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Address       string
 	ResultAddress string
+	FlagLogLevel  string
 }
 
 var (
@@ -18,10 +19,11 @@ var (
 
 func Init() *Config {
 	once.Do(func() {
-		var address, baseURL string
+		var address, baseURL, flagLogLevel string
 
 		flag.StringVar(&address, "a", "localhost:8080", "Address for the server")
 		flag.StringVar(&baseURL, "b", "http://localhost:8080", "Port for the server")
+		flag.StringVar(&flagLogLevel, "l", "info", "log level")
 
 		flag.Parse()
 
@@ -33,9 +35,14 @@ func Init() *Config {
 			baseURL = envBaseURL
 		}
 
+		if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+			flagLogLevel = envLogLevel
+		}
+
 		Instance = &Config{
 			Address:       address,
 			ResultAddress: baseURL,
+			FlagLogLevel:  flagLogLevel,
 		}
 	})
 	return Instance
