@@ -2,11 +2,13 @@ package url_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	"github.com/damirqa/shortener/internal/handlers"
+	"github.com/damirqa/shortener/internal/handlers/api"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -80,5 +82,40 @@ func TestGet(t *testing.T) {
 
 	if location := res.Header().Get("Location"); location != longURL.Link {
 		t.Errorf("Ожидался Location %s, но получен %s", longURL, location)
+	}
+}
+
+func TestShorten(t *testing.T) {
+	cfg := config.Init()
+
+	repo := URLDomainLocalRepository.New()
+	service := URLDomainService.New(repo)
+	useCase := URLUseCase.New(service)
+
+	router := mux.NewRouter()
+	router.HandleFunc("/", handlers.ShortenURL(useCase)).Methods("POST")
+
+	// todo: как-то проверить, что он закрылся
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	urlRequest := api.URLRequest{Link: "https://practicum.yandex.ru"}
+
+	urlRequestMarshal, err := json.Marshal(&urlRequest)
+	if err != nil {
+		t.Fatalf("Ошибка при сериализации. Ошибка: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "http://"+cfg.GetAddress()+"/", bytes.NewBuffer(urlRequestMarshal))
+	if err != nil {
+		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
+	}
+
+	res := httptest.NewRecorder()
+
+	router.ServeHTTP(res, req)
+
+	if status := res.Code; status != http.StatusCreated {
+		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)
 	}
 }
