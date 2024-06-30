@@ -62,6 +62,7 @@ func (app *App) initUseCases() {
 func (app *App) initHTTPServer() {
 	router := mux.NewRouter()
 	router.Use(middleware.LogMW)
+	router.Use(middleware.GzipMW)
 	handlers.RegisterHandlers(router, app.UseCases)
 
 	app.httpServer = &http.Server{

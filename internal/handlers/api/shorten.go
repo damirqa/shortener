@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"net/http"
-	"strconv"
-	"unicode/utf8"
 )
 
 type URLRequest struct {
@@ -34,7 +32,6 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Content-Length", strconv.Itoa(utf8.RuneCount(resp)))
 		writer.WriteHeader(http.StatusCreated)
 
 		_, err = writer.Write(resp)
