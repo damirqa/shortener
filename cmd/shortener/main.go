@@ -7,5 +7,7 @@ import (
 func main() {
 	a := &app.App{}
 	a.Init()
-	a.Start()
+	go a.Start()
+	a.Listen()
+	a.Stop()
 }

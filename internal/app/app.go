@@ -1,16 +1,20 @@
 package app
 
 import (
-	"fmt"
-	"github.com/damirqa/shortener/internal/infrastructure/logger"
-	"github.com/gorilla/mux"
-	"log"
-	"net/http"
-
+	"context"
+	"errors"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"github.com/gorilla/mux"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/middleware"
@@ -33,6 +37,7 @@ func (app *App) Init() {
 	app.initConfig()
 	app.initLogger()
 	app.initURL()
+	app.recoveryURL()
 	app.initUseCases()
 	app.initHTTPServer()
 }
@@ -51,6 +56,10 @@ func (app *App) initURL() {
 	app.URLDomainRepository = URLDomainLocalRepository.New()
 	app.URLDomainService = URLDomainService.New(app.URLDomainRepository)
 	app.URLUseCase = URLUseCase.New(app.URLDomainService)
+}
+
+func (app *App) recoveryURL() {
+	app.URLDomainService.RecoveryURLsFromFile()
 }
 
 func (app *App) initUseCases() {
@@ -72,13 +81,26 @@ func (app *App) initHTTPServer() {
 }
 
 func (app *App) Start() {
-
-	// http server
-	{
-		err := app.httpServer.ListenAndServe()
-		if err != nil {
-			fmt.Println(err.Error())
-			panic(err)
-		}
+	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Could not listen on %s: %v\n", config.Instance.GetAddress(), err)
 	}
+}
+
+func (app *App) Listen() {
+	signalCtx, signalCtxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer signalCtxCancel()
+
+	// wait signal
+	<-signalCtx.Done()
+}
+
+func (app *App) Stop() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := app.httpServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	app.URLDomainService.DumpToFile()
 }
