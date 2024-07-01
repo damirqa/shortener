@@ -81,6 +81,11 @@ func (s *URLService) DumpToFile() {
 }
 
 func (s *URLService) RecoveryURLsFromFile() {
+	if _, err := os.Stat(config.Instance.FileStoragePath); os.IsNotExist(err) {
+		log.Println("File not exist, skipping load:", config.Instance.FileStoragePath)
+		return
+	}
+
 	file, err := os.Open(config.Instance.FileStoragePath)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
