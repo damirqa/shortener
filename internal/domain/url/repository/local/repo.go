@@ -22,8 +22,24 @@ func (l *URLLocalRepository) Insert(key string, value entity.URL) {
 }
 
 func (l *URLLocalRepository) Get(key string) (entity.URL, bool) {
+	l.Lock()
+	defer l.Unlock()
+
 	link, exists := l.urls[key]
 	url := entity.New(link)
 
 	return *url, exists
+}
+
+func (l *URLLocalRepository) GetAll() map[string]entity.URL {
+	l.Lock()
+	defer l.Unlock()
+
+	urls := make(map[string]entity.URL)
+	for key, link := range l.urls {
+		url := entity.New(link)
+		urls[key] = *url
+	}
+
+	return urls
 }
