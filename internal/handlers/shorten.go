@@ -1,12 +1,11 @@
 package handlers
 
 import (
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
-	"strconv"
-	"unicode/utf8"
 )
 
 func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
@@ -20,14 +19,13 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-				log.Fatalf("Error closing request body: %v", err)
+				logger.GetLogger().Error("Error closing request body", zap.Error(err))
 			}
 		}(r.Body)
 
 		shortURL := useCase.Generate(string(longURL))
 
 		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Content-Length", strconv.Itoa(utf8.RuneCount(shortURL)))
 		w.WriteHeader(http.StatusCreated)
 
 		_, err = w.Write(shortURL)
