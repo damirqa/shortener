@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"io"
 	"net/http"
 )
 
@@ -18,9 +20,17 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlRequest URLRequest
 		if err := json.NewDecoder(request.Body).Decode(&urlRequest); err != nil {
+			// todo: как залогировать request.Body, ведь это же поток
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+			}
+		}(request.Body)
 
 		shortURL := useCase.Generate(urlRequest.Link)
 

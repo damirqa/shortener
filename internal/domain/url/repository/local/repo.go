@@ -6,40 +6,51 @@ import (
 )
 
 type URLLocalRepository struct {
-	sync.Mutex
-	urls map[string]string
+	urls sync.Map
 }
 
 func New() *URLLocalRepository {
-	return &URLLocalRepository{urls: make(map[string]string)}
+	return &URLLocalRepository{}
 }
 
 func (l *URLLocalRepository) Insert(key string, value entity.URL) {
-	l.Lock()
-	defer l.Unlock()
-
-	l.urls[key] = value.Link
+	l.urls.Store(key, value.Link)
 }
 
 func (l *URLLocalRepository) Get(key string) (entity.URL, bool) {
-	l.Lock()
-	defer l.Unlock()
+	value, exists := l.urls.Load(key)
+	if !exists {
+		return entity.URL{}, false
+	}
 
-	link, exists := l.urls[key]
+	link, ok := value.(string)
+	if !ok {
+		return entity.URL{}, false
+	}
+
 	url := entity.New(link)
 
-	return *url, exists
+	return *url, true
 }
 
 func (l *URLLocalRepository) GetAll() map[string]entity.URL {
-	l.Lock()
-	defer l.Unlock()
-
 	urls := make(map[string]entity.URL)
-	for key, link := range l.urls {
+	l.urls.Range(func(key, value interface{}) bool {
+		k, ok := key.(string)
+		if !ok {
+			return false
+		}
+
+		link, ok := value.(string)
+		if !ok {
+			return false
+		}
+
 		url := entity.New(link)
-		urls[key] = *url
-	}
+		urls[k] = *url
+
+		return true
+	})
 
 	return urls
 }

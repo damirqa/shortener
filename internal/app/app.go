@@ -9,11 +9,9 @@ import (
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/damirqa/shortener/internal/handlers"
@@ -47,7 +45,7 @@ func (app *App) initConfig() {
 }
 
 func (app *App) initLogger() {
-	if err := logger.Initialize(config.Instance.FlagLogLevel); err != nil {
+	if err := logger.Initialize(config.Instance.LogLevel); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -59,7 +57,7 @@ func (app *App) initURL() {
 }
 
 func (app *App) recoveryURL() {
-	app.URLDomainService.RecoveryURLsFromFile()
+	app.URLDomainService.LoadFromFile()
 }
 
 func (app *App) initUseCases() {
@@ -70,8 +68,8 @@ func (app *App) initUseCases() {
 
 func (app *App) initHTTPServer() {
 	router := mux.NewRouter()
-	router.Use(middleware.LogMW)
-	router.Use(middleware.GzipMW)
+	router.Use(middleware.LogMiddleware)
+	router.Use(middleware.GzipMiddleware)
 	handlers.RegisterHandlers(router, app.UseCases)
 
 	app.httpServer = &http.Server{
@@ -82,25 +80,19 @@ func (app *App) initHTTPServer() {
 
 func (app *App) Start() {
 	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("Could not listen on %s: %v\n", config.Instance.GetAddress(), err)
+		logger.GetLogger().Fatal("Could not listen",
+			zap.String("address", config.Instance.GetAddress()),
+			zap.Error(err))
 	}
 }
 
-func (app *App) Listen() {
-	signalCtx, signalCtxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer signalCtxCancel()
-
-	// wait signal
-	<-signalCtx.Done()
-}
-
-func (app *App) Stop() {
+func (app *App) Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := app.httpServer.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		logger.GetLogger().Fatal("Server forced to shutdown", zap.Error(err))
 	}
 
-	app.URLDomainService.DumpToFile()
+	app.URLDomainService.SaveToFile()
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -17,7 +16,10 @@ type LoggingResponseWriter struct {
 	size       int
 }
 
-func NewLoggingResponseWriter(w http.ResponseWriter) *LoggingResponseWriter {
+// todo: почему лучше NewLoggingResponseWriterFunc, а не NewLoggingResponseWriter
+//
+//	я же возвращаю объект
+func NewLoggingResponseWriterFunc(w http.ResponseWriter) *LoggingResponseWriter {
 	return &LoggingResponseWriter{w, http.StatusOK, 0}
 }
 
@@ -32,23 +34,26 @@ func (r *LoggingResponseWriter) Write(b []byte) (int, error) {
 	return bytesWritten, err
 }
 
-func LogMW(next http.Handler) http.Handler {
+func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		lw := NewLoggingResponseWriter(w)
+		lw := NewLoggingResponseWriterFunc(w)
 
-		log.Printf("%s - %s (%s)", r.Method, r.URL.Path, r.RemoteAddr)
+		logger.GetLogger().Info("HTTP request",
+			zap.String("method", r.Method),
+			zap.String("url_path", r.URL.Path),
+			zap.String("remote_addr", r.RemoteAddr))
 
 		next.ServeHTTP(lw, r)
 
-		duration := time.Since(start)
+		duration := time.Since(start).Milliseconds()
 
-		logger.Log.Info("request",
+		logger.GetLogger().Info("request",
 			zap.String("method", r.Method),
 			zap.String("uri", r.RequestURI),
 			zap.String("remote_address", r.RemoteAddr),
-			zap.Int("duration", int(duration)),
+			zap.Int64("duration", duration),
 			zap.Int("status_code", lw.statusCode),
 			zap.Int("size", lw.size))
 	})
@@ -63,7 +68,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func GzipMW(next http.Handler) http.Handler {
+func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Header.Get("Content-Encoding") == "gzip" {
 			reader, err := gzip.NewReader(request.Body)
@@ -84,5 +89,12 @@ func GzipMW(next http.Handler) http.Handler {
 		} else {
 			next.ServeHTTP(writer, request)
 		}
+
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logger.GetLogger().Fatal(err.Error())
+			}
+		}(request.Body)
 	})
 }

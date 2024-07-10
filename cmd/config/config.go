@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Address         string
 	ResultAddress   string
-	FlagLogLevel    string
+	LogLevel        string
 	FileStoragePath string
 }
 
@@ -20,11 +20,11 @@ var (
 
 func Init() *Config {
 	once.Do(func() {
-		var address, baseURL, flagLogLevel, fileStoragePath string
+		var address, baseURL, logLevel, fileStoragePath string
 
 		flag.StringVar(&address, "a", "localhost:8080", "Address for the server")
 		flag.StringVar(&baseURL, "b", "http://localhost:8080", "Port for the server")
-		flag.StringVar(&flagLogLevel, "l", "info", "log level")
+		flag.StringVar(&logLevel, "l", "info", "log level")
 		flag.StringVar(&fileStoragePath, "f", "/tmp/short-url-db.json", "Path for file storage")
 
 		flag.Parse()
@@ -38,7 +38,7 @@ func Init() *Config {
 		}
 
 		if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
-			flagLogLevel = envLogLevel
+			logLevel = envLogLevel
 		}
 
 		if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
@@ -48,7 +48,7 @@ func Init() *Config {
 		Instance = &Config{
 			Address:         address,
 			ResultAddress:   baseURL,
-			FlagLogLevel:    flagLogLevel,
+			LogLevel:        logLevel,
 			FileStoragePath: fileStoragePath,
 		}
 	})

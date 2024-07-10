@@ -7,7 +7,8 @@ import (
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
 	"github.com/damirqa/shortener/internal/domain/url/repository"
-	"log"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"go.uber.org/zap"
 	"math/big"
 	"os"
 )
@@ -32,7 +33,7 @@ func (s *URLService) GenerateShortURL() *entity.URL {
 	for i := range b {
 		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			log.Fatalf("Problem with generate short URL: %v", err)
+			logger.GetLogger().Error("Problem with generate short URL", zap.Error(err))
 		}
 
 		b[i] = letters[index.Int64()]
@@ -53,44 +54,51 @@ type URLData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (s *URLService) DumpToFile() {
+func (s *URLService) SaveToFile() {
 	urls := s.repo.GetAll()
 
-	file, err := os.OpenFile(config.Instance.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(config.Instance.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		log.Fatalf("error opening file: %v", err)
+		logger.GetLogger().Error("Error opening file", zap.Error(err))
 	}
-	defer file.Close()
 
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			logger.GetLogger().Error(err.Error())
+		}
+	}(file)
+
+	encoder := json.NewEncoder(file)
 	for key, URLEntity := range urls {
 		urlData := URLData{
 			UUID:        key,
 			ShortURL:    key,
 			OriginalURL: URLEntity.Link,
 		}
-		data, err := json.Marshal(urlData)
-		if err != nil {
-			log.Fatalf("error marshalling url data: %v", err)
-		}
-
-		_, err = file.Write(append(data, '\n'))
-		if err != nil {
-			log.Fatalf("error writing to file: %v", err)
+		if err := encoder.Encode(&urlData); err != nil {
+			logger.GetLogger().Error("Error encoding url data", zap.Error(err))
 		}
 	}
 }
 
-func (s *URLService) RecoveryURLsFromFile() {
+func (s *URLService) LoadFromFile() {
 	if _, err := os.Stat(config.Instance.FileStoragePath); os.IsNotExist(err) {
-		log.Println("File not exist, skipping load:", config.Instance.FileStoragePath)
+		logger.GetLogger().Info("File not exist, skipping load:", zap.String("path", config.Instance.FileStoragePath))
 		return
 	}
 
 	file, err := os.Open(config.Instance.FileStoragePath)
 	if err != nil {
-		log.Fatalf("error opening file: %v", err)
+		logger.GetLogger().Error(err.Error())
 	}
-	defer file.Close()
+
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			logger.GetLogger().Error(err.Error())
+		}
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -100,15 +108,17 @@ func (s *URLService) RecoveryURLsFromFile() {
 		}
 
 		var urlData URLData
+
 		err := json.Unmarshal([]byte(line), &urlData)
 		if err != nil {
-			log.Fatalf("error unmarshalling url data: %v", err)
+			logger.GetLogger().Error(err.Error())
 		}
+
 		url := entity.New(urlData.OriginalURL)
 		s.repo.Insert(urlData.UUID, *url)
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("error reading file: %v", err)
+		logger.GetLogger().Error(err.Error())
 	}
 }
