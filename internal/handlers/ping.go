@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,10 +11,7 @@ import (
 
 func Ping() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-			config.Instance.DatabaseDSN, `myuser`, `mypassword`, `mydatabase`)
-
-		db, err := sql.Open("pgx", ps)
+		db, err := sql.Open("pgx", config.Instance.DatabaseDSN)
 
 		if err != nil {
 			logger.GetLogger().Error("problem with connection to db", zap.Error(err))
