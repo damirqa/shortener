@@ -7,7 +7,9 @@ import (
 )
 
 func RegisterHandlers(router *mux.Router, useCases *usecase.UseCases) {
+	// todo: добавить константы к путям
 	router.HandleFunc("/", ShortenURL(useCases.URLUseCase)).Methods("POST")
+	router.HandleFunc("/ping", Ping()).Methods("GET")
 	router.HandleFunc("/{id}", ExpandURL(useCases.URLUseCase)).Methods("GET")
 	router.HandleFunc("/api/shorten", api.ShortenURL(useCases.URLUseCase)).Methods("POST")
 }

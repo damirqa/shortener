@@ -11,6 +11,7 @@ type Config struct {
 	ResultAddress   string
 	LogLevel        string
 	FileStoragePath string
+	DatabaseDSN     string
 }
 
 var (
@@ -20,12 +21,13 @@ var (
 
 func Init() *Config {
 	once.Do(func() {
-		var address, baseURL, logLevel, fileStoragePath string
+		var address, baseURL, logLevel, fileStoragePath, databaseDSN string
 
 		flag.StringVar(&address, "a", "localhost:8080", "Address for the server")
 		flag.StringVar(&baseURL, "b", "http://localhost:8080", "Port for the server")
 		flag.StringVar(&logLevel, "l", "info", "log level")
 		flag.StringVar(&fileStoragePath, "f", "/tmp/short-url-db.json", "Path for file storage")
+		flag.StringVar(&databaseDSN, "d", "localhost", "connection to database")
 
 		flag.Parse()
 
@@ -45,11 +47,16 @@ func Init() *Config {
 			fileStoragePath = envFileStoragePath
 		}
 
+		if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
+			databaseDSN = envDatabaseDSN
+		}
+
 		Instance = &Config{
 			Address:         address,
 			ResultAddress:   baseURL,
 			LogLevel:        logLevel,
 			FileStoragePath: fileStoragePath,
+			DatabaseDSN:     databaseDSN,
 		}
 	})
 	return Instance
