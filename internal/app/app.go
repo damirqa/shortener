@@ -7,6 +7,7 @@ import (
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/repository"
 	URLDomainDBRepository "github.com/damirqa/shortener/internal/domain/url/repository/db"
+	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
@@ -57,11 +58,12 @@ func (app *App) initLogger() {
 func (app *App) initURL() {
 	URLDBRepository, err := URLDomainDBRepository.New()
 	if err != nil {
-		logger.GetLogger().Fatal("problem with connection to db", zap.Error(err))
-		return
+		logger.GetLogger().Error("problem with connection to db", zap.Error(err))
+		app.URLDomainRepository = URLDomainLocalRepository.New()
+	} else {
+		app.URLDomainRepository = URLDBRepository
 	}
 
-	app.URLDomainRepository = URLDBRepository
 	app.URLDomainService = URLDomainService.New(app.URLDomainRepository)
 	app.URLUseCase = URLUseCase.New(app.URLDomainService)
 }

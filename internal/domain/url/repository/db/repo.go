@@ -19,6 +19,17 @@ func New() (*URLDBRepository, error) {
 		return nil, err
 	}
 
+	conn, err := pool.Acquire(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+
+	err = conn.Conn().Ping(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	return &URLDBRepository{pool: pool}, nil
 }
 
