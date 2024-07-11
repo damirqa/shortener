@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/damirqa/shortener/cmd/config"
-	URLDomainLocalRepository "github.com/damirqa/shortener/internal/domain/url/repository/local"
+	"github.com/damirqa/shortener/internal/domain/url/repository"
+	URLDomainDBRepository "github.com/damirqa/shortener/internal/domain/url/repository/db"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
@@ -23,8 +25,9 @@ type App struct {
 	httpServer *http.Server
 
 	// url
-	URLDomainService    *URLDomainService.URLService
-	URLDomainRepository *URLDomainLocalRepository.URLLocalRepository
+	URLDomainService *URLDomainService.URLService
+	//URLDomainRepository *URLDomainLocalRepository.URLLocalRepository
+	URLDomainRepository repository.URLRepository
 	URLUseCase          *URLUseCase.UseCase
 
 	// use cases
@@ -36,6 +39,7 @@ func (app *App) Init() {
 	app.initLogger()
 	app.initURL()
 	app.recoveryURL()
+	app.initDBSchemas()
 	app.initUseCases()
 	app.initHTTPServer()
 }
@@ -51,13 +55,57 @@ func (app *App) initLogger() {
 }
 
 func (app *App) initURL() {
-	app.URLDomainRepository = URLDomainLocalRepository.New()
+	URLDBRepository, err := URLDomainDBRepository.New()
+	if err != nil {
+		logger.GetLogger().Fatal("problem with connection to db", zap.Error(err))
+		return
+	}
+
+	app.URLDomainRepository = URLDBRepository
 	app.URLDomainService = URLDomainService.New(app.URLDomainRepository)
 	app.URLUseCase = URLUseCase.New(app.URLDomainService)
 }
 
 func (app *App) recoveryURL() {
 	app.URLDomainService.LoadFromFile()
+}
+
+func (app *App) initDBSchemas() {
+	db, err := sql.Open("pgx", config.Instance.DatabaseDSN)
+	if err != nil {
+		logger.GetLogger().Error("problem with connection to db", zap.Error(err))
+		return
+	}
+
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			logger.GetLogger().Error("problem with closing connection", zap.Error(err))
+		}
+	}(db)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		logger.GetLogger().Error("db ping failed", zap.Error(err))
+		return
+	}
+
+	query := `
+	CREATE TABLE IF NOT EXISTS urls (
+		short VARCHAR(255) PRIMARY KEY,
+		long TEXT NOT NULL
+	);`
+
+	_, err = db.ExecContext(ctx, query)
+	if err != nil {
+		logger.GetLogger().Error("failed to create table", zap.Error(err))
+		return
+	}
+
+	logger.GetLogger().Info("table created successfully")
 }
 
 func (app *App) initUseCases() {

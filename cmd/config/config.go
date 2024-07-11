@@ -27,7 +27,8 @@ func Init() *Config {
 		flag.StringVar(&baseURL, "b", "http://localhost:8080", "Port for the server")
 		flag.StringVar(&logLevel, "l", "info", "log level")
 		flag.StringVar(&fileStoragePath, "f", "/tmp/short-url-db.json", "Path for file storage")
-		flag.StringVar(&databaseDSN, "d", "localhost", "connection to database")
+		flag.StringVar(&databaseDSN, "d", "", "connection to database")
+		//flag.StringVar(&databaseDSN, "d", "host=localhost user=myuser password=mypassword dbname=mydatabase sslmode=disable", "connection to database")
 
 		flag.Parse()
 

@@ -24,7 +24,10 @@ func New(repo repository.URLRepository) *URLService {
 }
 
 func (s *URLService) SaveURL(shortURL, longURL *entity.URL) {
-	s.repo.Insert(shortURL.Link, *longURL)
+	err := s.repo.Insert(shortURL.Link, *longURL)
+	if err != nil {
+		logger.GetLogger().Error("cannot insert link", zap.Error(err))
+	}
 }
 
 func (s *URLService) GenerateShortURL() *entity.URL {
@@ -43,7 +46,10 @@ func (s *URLService) GenerateShortURL() *entity.URL {
 }
 
 func (s *URLService) Get(shortURL *entity.URL) (entity.URL, bool) {
-	longURL, exist := s.repo.Get(shortURL.Link)
+	longURL, exist, err := s.repo.Get(shortURL.Link)
+	if err != nil {
+		logger.GetLogger().Error("cannot get url from db", zap.Error(err))
+	}
 
 	return longURL, exist
 }
@@ -55,7 +61,10 @@ type URLData struct {
 }
 
 func (s *URLService) SaveToFile() {
-	urls := s.repo.GetAll()
+	urls, err := s.repo.GetAll()
+	if err != nil {
+		logger.GetLogger().Error("problem get all data from urls", zap.Error(err))
+	}
 
 	file, err := os.OpenFile(config.Instance.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -115,7 +124,11 @@ func (s *URLService) LoadFromFile() {
 		}
 
 		url := entity.New(urlData.OriginalURL)
-		s.repo.Insert(urlData.UUID, *url)
+
+		err = s.repo.Insert(urlData.UUID, *url)
+		if err != nil {
+			logger.GetLogger().Error("cannot insert link", zap.Error(err))
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
