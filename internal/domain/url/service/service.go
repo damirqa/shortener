@@ -137,17 +137,17 @@ func (s *URLService) LoadFromFile() {
 	}
 }
 
-func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationId) ([]*entity.URL, error) {
+func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*entity.URL, error) {
 	res := make([]*entity.URL, 0, len(urls))
 
 	for _, url := range urls {
 		shortURL := s.GenerateShortURL()
-		err := s.repo.InsertURLWithCorrelationId(shortURL.Link, url.OriginalUrl)
+		err := s.repo.InsertURLWithCorrelationID(shortURL.Link, url.OriginalURL)
 		if err != nil {
 			return nil, err
 		}
 
-		shortURL.CorrelationId = url.CorrelationId
+		shortURL.CorrelationID = url.CorrelationID
 		res = append(res, shortURL)
 	}
 

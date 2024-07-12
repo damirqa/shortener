@@ -110,7 +110,7 @@ func (l *URLDBRepository) GetAll() (map[string]entity.URL, error) {
 	return urls, nil
 }
 
-func (l *URLDBRepository) InsertURLWithCorrelationId(short, long string) error {
+func (l *URLDBRepository) InsertURLWithCorrelationID(short, long string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 

@@ -35,28 +35,28 @@ func (u UseCase) Get(shortURL string) (URLDomainEntity.URL, bool) {
 	return longURL, exist
 }
 
-func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationId) ([]model.URLResponseWithCorrelationId, error) {
-	URLSRequestWithCorrelationId := make([]model.URLRequestWithCorrelationId, 0, 1000)
-	var URLSResponseWithCorrelationId []model.URLResponseWithCorrelationId
+func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]model.URLResponseWithCorrelationId, error) {
+	URLSRequestWithCorrelationID := make([]model.URLRequestWithCorrelationID, 0, 1000)
+	var URLSResponseWithCorrelationID []model.URLResponseWithCorrelationId
 	var URLEntities []*URLDomainEntity.URL
 
 	for _, URLReq := range request {
-		URLSRequestWithCorrelationId = append(URLSRequestWithCorrelationId, URLReq)
+		URLSRequestWithCorrelationID = append(URLSRequestWithCorrelationID, URLReq)
 
-		if len(URLSRequestWithCorrelationId) == 1000 {
-			entities, err := u.service.CreateURLs(URLSRequestWithCorrelationId)
+		if len(URLSRequestWithCorrelationID) == 1000 {
+			entities, err := u.service.CreateURLs(URLSRequestWithCorrelationID)
 			if err != nil {
 				logger.GetLogger().Error(err.Error())
 				return nil, err
 			}
 
 			URLEntities = append(URLEntities, entities...)
-			URLSRequestWithCorrelationId = URLSRequestWithCorrelationId[:0]
+			URLSRequestWithCorrelationID = URLSRequestWithCorrelationID[:0]
 		}
 	}
 
-	if len(URLSRequestWithCorrelationId) > 0 {
-		entities, err := u.service.CreateURLs(URLSRequestWithCorrelationId)
+	if len(URLSRequestWithCorrelationID) > 0 {
+		entities, err := u.service.CreateURLs(URLSRequestWithCorrelationID)
 		if err != nil {
 			logger.GetLogger().Error(err.Error())
 			return nil, err
@@ -65,9 +65,9 @@ func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationId) ([]m
 	}
 
 	for _, e := range URLEntities {
-		URLResponseWithCorrelationId := model.URLResponseWithCorrelationId{CorrelationId: e.CorrelationId, ShortUrl: e.Link}
-		URLSResponseWithCorrelationId = append(URLSResponseWithCorrelationId, URLResponseWithCorrelationId)
+		URLResponseWithCorrelationID := model.URLResponseWithCorrelationId{CorrelationID: e.CorrelationID, ShortURL: e.Link}
+		URLSResponseWithCorrelationID = append(URLSResponseWithCorrelationID, URLResponseWithCorrelationID)
 	}
 
-	return URLSResponseWithCorrelationId, nil
+	return URLSResponseWithCorrelationID, nil
 }

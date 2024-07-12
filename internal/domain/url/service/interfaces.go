@@ -9,5 +9,5 @@ type BaseDomainService interface {
 	GenerateShortURL() *entity.URL
 	SaveURL(shortURL, longURL *entity.URL)
 	Get(shortURL *entity.URL) (entity.URL, bool)
-	CreateURLs(urls []model.URLRequestWithCorrelationId) ([]*entity.URL, error)
+	CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*entity.URL, error)
 }

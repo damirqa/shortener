@@ -6,5 +6,5 @@ type URLRepository interface {
 	Insert(key string, value entity.URL) error
 	Get(key string) (entity.URL, bool, error)
 	GetAll() (map[string]entity.URL, error)
-	InsertURLWithCorrelationId(short, long string) error
+	InsertURLWithCorrelationID(short, long string) error
 }

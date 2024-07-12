@@ -55,7 +55,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 
 func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		var urlsRequest []URLModels.URLRequestWithCorrelationId
+		var urlsRequest []URLModels.URLRequestWithCorrelationID
 		if err := json.NewDecoder(request.Body).Decode(&urlsRequest); err != nil {
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return

@@ -9,7 +9,7 @@ type URLLocalRepository struct {
 	urls sync.Map
 }
 
-func (l *URLLocalRepository) InsertURLWithCorrelationId(short, long string) error {
+func (l *URLLocalRepository) InsertURLWithCorrelationID(short, long string) error {
 	l.urls.Store(short, long)
 
 	return nil
