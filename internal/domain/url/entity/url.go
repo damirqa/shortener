@@ -1,7 +1,8 @@
 package entity
 
 type URL struct {
-	Link string
+	Link          string
+	CorrelationId string
 }
 
 func New(link string) *URL {

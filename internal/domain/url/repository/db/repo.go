@@ -5,8 +5,10 @@ import (
 	"errors"
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"time"
 )
 
 type URLDBRepository struct {
@@ -106,4 +108,26 @@ func (l *URLDBRepository) GetAll() (map[string]entity.URL, error) {
 	}
 
 	return urls, nil
+}
+
+func (l *URLDBRepository) InsertURLWithCorrelationId(short, long string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	conn, err := l.pool.Acquire(ctx)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	_, err = conn.Conn().Prepare(ctx, "insertURL", "INSERT INTO urls (short, long) VALUES ($1, $2)")
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	_, err = conn.Conn().Exec(ctx, "insertURL", short, long)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	return nil
 }

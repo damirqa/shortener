@@ -12,4 +12,5 @@ func RegisterHandlers(router *mux.Router, useCases *usecase.UseCases) {
 	router.HandleFunc("/ping", Ping()).Methods("GET")
 	router.HandleFunc("/{id}", ExpandURL(useCases.URLUseCase)).Methods("GET")
 	router.HandleFunc("/api/shorten", api.ShortenURL(useCases.URLUseCase)).Methods("POST")
+	router.HandleFunc("/api/shorten/batch", api.ShortenURLSBatch(useCases.URLUseCase)).Methods("POST")
 }

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
+	"github.com/damirqa/shortener/internal/domain/url/model"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	"github.com/damirqa/shortener/internal/infrastructure/logger"
 )
 
 type UseCase struct {
@@ -31,4 +33,41 @@ func (u UseCase) Get(shortURL string) (URLDomainEntity.URL, bool) {
 	shortURLEntity := URLDomainEntity.New(shortURL)
 	longURL, exist := u.service.Get(shortURLEntity)
 	return longURL, exist
+}
+
+func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationId) ([]model.URLResponseWithCorrelationId, error) {
+	URLSRequestWithCorrelationId := make([]model.URLRequestWithCorrelationId, 0, 1000)
+	var URLSResponseWithCorrelationId []model.URLResponseWithCorrelationId
+	var URLEntities []*URLDomainEntity.URL
+
+	for _, URLReq := range request {
+		URLSRequestWithCorrelationId = append(URLSRequestWithCorrelationId, URLReq)
+
+		if len(URLSRequestWithCorrelationId) == 1000 {
+			entities, err := u.service.CreateURLs(URLSRequestWithCorrelationId)
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+				return nil, err
+			}
+
+			URLEntities = append(URLEntities, entities...)
+			URLSRequestWithCorrelationId = URLSRequestWithCorrelationId[:0]
+		}
+	}
+
+	if len(URLSRequestWithCorrelationId) > 0 {
+		entities, err := u.service.CreateURLs(URLSRequestWithCorrelationId)
+		if err != nil {
+			logger.GetLogger().Error(err.Error())
+			return nil, err
+		}
+		URLEntities = append(URLEntities, entities...)
+	}
+
+	for _, e := range URLEntities {
+		URLResponseWithCorrelationId := model.URLResponseWithCorrelationId{CorrelationId: e.CorrelationId, ShortUrl: e.Link}
+		URLSResponseWithCorrelationId = append(URLSResponseWithCorrelationId, URLResponseWithCorrelationId)
+	}
+
+	return URLSResponseWithCorrelationId, nil
 }

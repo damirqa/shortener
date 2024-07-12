@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
+	"github.com/damirqa/shortener/internal/domain/url/model"
 	"github.com/damirqa/shortener/internal/domain/url/repository"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"go.uber.org/zap"
@@ -134,4 +135,21 @@ func (s *URLService) LoadFromFile() {
 	if err := scanner.Err(); err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
+}
+
+func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationId) ([]*entity.URL, error) {
+	res := make([]*entity.URL, 0, len(urls))
+
+	for _, url := range urls {
+		shortURL := s.GenerateShortURL()
+		err := s.repo.InsertURLWithCorrelationId(shortURL.Link, url.OriginalUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		shortURL.CorrelationId = url.CorrelationId
+		res = append(res, shortURL)
+	}
+
+	return res, nil
 }
