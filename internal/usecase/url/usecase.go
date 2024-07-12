@@ -35,9 +35,9 @@ func (u UseCase) Get(shortURL string) (URLDomainEntity.URL, bool) {
 	return longURL, exist
 }
 
-func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]model.URLResponseWithCorrelationId, error) {
+func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]model.URLResponseWithCorrelationID, error) {
 	URLSRequestWithCorrelationID := make([]model.URLRequestWithCorrelationID, 0, 1000)
-	var URLSResponseWithCorrelationID []model.URLResponseWithCorrelationId
+	var URLSResponseWithCorrelationID []model.URLResponseWithCorrelationID
 	var URLEntities []*URLDomainEntity.URL
 
 	for _, URLReq := range request {
@@ -65,7 +65,7 @@ func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]m
 	}
 
 	for _, e := range URLEntities {
-		URLResponseWithCorrelationID := model.URLResponseWithCorrelationId{CorrelationID: e.CorrelationID, ShortURL: e.Link}
+		URLResponseWithCorrelationID := model.URLResponseWithCorrelationID{CorrelationID: e.CorrelationID, ShortURL: e.Link}
 		URLSResponseWithCorrelationID = append(URLSResponseWithCorrelationID, URLResponseWithCorrelationID)
 	}
 

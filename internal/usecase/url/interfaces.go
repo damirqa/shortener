@@ -8,5 +8,5 @@ import "github.com/damirqa/shortener/internal/domain/url/model"
 type UseCaseInterface interface {
 	Generate(longURL string) []byte
 	Get(shortURL string) (entity.URL, bool)
-	GenerateBatch(request []model.URLRequestWithCorrelationID) ([]model.URLResponseWithCorrelationId, error)
+	GenerateBatch(request []model.URLRequestWithCorrelationID) ([]model.URLResponseWithCorrelationID, error)
 }
