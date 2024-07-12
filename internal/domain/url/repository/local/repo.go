@@ -9,6 +9,10 @@ type URLLocalRepository struct {
 	urls sync.Map
 }
 
+func (l *URLLocalRepository) Close() {
+
+}
+
 func (l *URLLocalRepository) InsertURLWithCorrelationID(short, long string) error {
 	l.urls.Store(short, long)
 

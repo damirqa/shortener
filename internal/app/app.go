@@ -145,4 +145,5 @@ func (app *App) Shutdown() {
 	}
 
 	app.URLDomainService.SaveToFile()
+	app.URLDomainRepository.Close()
 }
