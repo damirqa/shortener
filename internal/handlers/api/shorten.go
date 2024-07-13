@@ -81,7 +81,7 @@ func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusOK)
+		writer.WriteHeader(http.StatusCreated)
 
 		_, err = writer.Write(resp)
 		if err != nil {

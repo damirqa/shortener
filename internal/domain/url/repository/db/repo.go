@@ -6,7 +6,6 @@ import (
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -52,14 +51,29 @@ func (l *URLDBRepository) Insert(key string, value entity.URL) error {
 
 func (l *URLDBRepository) Get(key string) (entity.URL, bool, error) {
 	var link string
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	err := l.pool.QueryRow(ctx, "SELECT long FROM urls WHERE short = $1", key).Scan(&link)
+	if l.pool == nil {
+		logger.GetLogger().Fatal("pool is nil")
+		return entity.URL{}, false, errors.New("pool is nil")
+	}
+
+	conn, err := l.pool.Acquire(ctx)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return entity.URL{}, false, nil
-		}
+		logger.GetLogger().Error(err.Error())
+	}
+
+	_, err = conn.Conn().Prepare(ctx, "selectURL", "SELECT long FROM urls WHERE short = $1")
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	err = conn.Conn().QueryRow(ctx, "selectURL", key).Scan(&link)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+
 		return entity.URL{}, false, err
 	}
 
@@ -88,8 +102,13 @@ func (l *URLDBRepository) GetAll() (map[string]entity.URL, error) {
 }
 
 func (l *URLDBRepository) InsertURLWithCorrelationID(short, long string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	if l.pool == nil {
+		logger.GetLogger().Fatal("pool is nil")
+		return errors.New("pool is nil")
+	}
 
 	conn, err := l.pool.Acquire(ctx)
 	if err != nil {

@@ -31,6 +31,10 @@ func (u UseCase) Generate(longURL string) []byte {
 
 func (u UseCase) Get(shortURL string) (URLDomainEntity.URL, bool) {
 	shortURLEntity := URLDomainEntity.New(shortURL)
+	if shortURLEntity == nil {
+		return URLDomainEntity.URL{}, false
+	}
+
 	longURL, exist := u.service.Get(shortURLEntity)
 	return longURL, exist
 }
