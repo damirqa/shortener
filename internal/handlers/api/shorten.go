@@ -5,6 +5,7 @@ import (
 	URLModels "github.com/damirqa/shortener/internal/domain/url/model"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -73,6 +74,8 @@ func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		logger.GetLogger().Info("Generated short urls", zap.Any("short_urls", shortURLs))
 
 		resp, err := json.Marshal(shortURLs)
 		if err != nil {

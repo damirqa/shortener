@@ -65,6 +65,10 @@ func (l *URLDBRepository) Get(key string) (entity.URL, bool, error) {
 		logger.GetLogger().Error(err.Error())
 	}
 
+	defer func() {
+		conn.Release()
+	}()
+
 	_, err = conn.Conn().Prepare(ctx, "selectURL", "SELECT long FROM urls WHERE short = $1")
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
@@ -114,6 +118,10 @@ func (l *URLDBRepository) InsertURLWithCorrelationID(short, long string) error {
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
+
+	defer func() {
+		conn.Release()
+	}()
 
 	_, err = conn.Conn().Prepare(ctx, "insertURL", "INSERT INTO urls (short, long) VALUES ($1, $2)")
 	if err != nil {
