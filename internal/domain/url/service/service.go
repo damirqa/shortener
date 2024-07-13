@@ -147,12 +147,7 @@ func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*en
 			return nil, err
 		}
 
-		// (*shortURL).CorrelationID = url.CorrelationID
-		if shortURL != nil {
-			shortURL.CorrelationID = url.CorrelationID
-		} else {
-			logger.GetLogger().Error("DANGEROUS PLACE VSE TAKI NIL")
-		}
+		shortURL.CorrelationID = url.CorrelationID
 		res = append(res, shortURL)
 	}
 
