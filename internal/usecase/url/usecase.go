@@ -69,7 +69,7 @@ func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]m
 	}
 
 	for _, e := range URLEntities {
-		URLResponseWithCorrelationID := model.URLResponseWithCorrelationID{CorrelationID: e.CorrelationID, ShortURL: e.Link}
+		URLResponseWithCorrelationID := model.URLResponseWithCorrelationID{CorrelationID: e.CorrelationID, ShortURL: config.Instance.GetResultAddress() + "/" + e.Link}
 		URLSResponseWithCorrelationID = append(URLSResponseWithCorrelationID, URLResponseWithCorrelationID)
 	}
 
