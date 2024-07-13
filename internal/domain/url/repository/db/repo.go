@@ -101,6 +101,9 @@ func (l *URLDBRepository) GetAll() (map[string]entity.URL, error) {
 		url := entity.New(link)
 		urls[key] = *url
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return urls, nil
 }

@@ -47,7 +47,7 @@ func (u UseCase) GenerateBatch(request []model.URLRequestWithCorrelationID) ([]m
 	for _, URLReq := range request {
 		URLSRequestWithCorrelationID = append(URLSRequestWithCorrelationID, URLReq)
 
-		if len(URLSRequestWithCorrelationID) == 1000 {
+		if len(URLSRequestWithCorrelationID) == 2 {
 			entities, err := u.service.CreateURLs(URLSRequestWithCorrelationID)
 			if err != nil {
 				logger.GetLogger().Error(err.Error())
