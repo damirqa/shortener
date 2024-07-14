@@ -16,6 +16,7 @@ type URLDBRepository struct {
 	pool *pgxpool.Pool
 }
 
+// todo: нужно ли закрывать при завершении работы приложения?
 func (l *URLDBRepository) Close() {
 	l.pool.Close()
 }
@@ -57,6 +58,8 @@ func (l *URLDBRepository) Insert(key string, value entity.URL) error {
 
 func (l *URLDBRepository) Get(key string) (entity.URL, bool, error) {
 	var link string
+
+	// todo: если использовать context.WithTimeout(context.Background(), 5*time.Second), то следующие запросы (в целом) не будут выполняться, почему?
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

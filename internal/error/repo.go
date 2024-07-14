@@ -2,6 +2,7 @@ package error
 
 import "fmt"
 
+// todo: где лучше хранить ошибки? да и еще с разным контекстом (бд, работа с файлом)
 type UniqueConstraintError struct {
 	Err error
 }

@@ -32,10 +32,6 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			if errors.As(err, &uniqueErr) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusConflict)
-
-				fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
-				_, _ = w.Write([]byte(fullURL))
-				return
 			} else {
 				logger.GetLogger().Error("Error generate short url", zap.Error(err))
 				http.Error(w, "Error generate short url", http.StatusInternalServerError)

@@ -8,7 +8,6 @@ import (
 	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -41,6 +40,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {
+				writer.Header().Set("Content-Type", "application/json")
 				writer.WriteHeader(http.StatusConflict)
 			} else {
 				logger.GetLogger().Error(err.Error())
@@ -66,6 +66,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	}
 }
 
+// todo: принято ли в одном хендлере обрабатывать несколько запросов?
 func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlsRequest []URLModels.URLRequestWithCorrelationID
@@ -86,8 +87,6 @@ func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		logger.GetLogger().Info("Generated short urls", zap.Any("short_urls", shortURLs))
 
 		resp, err := json.Marshal(shortURLs)
 		if err != nil {

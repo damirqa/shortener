@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// todo: в целом необходимо переписать
 type URLLocalRepository struct {
 	urls sync.Map
 }
