@@ -24,11 +24,14 @@ func New(repo repository.URLRepository) *URLService {
 	}
 }
 
-func (s *URLService) SaveURL(shortURL, longURL *entity.URL) {
+func (s *URLService) SaveURL(shortURL, longURL *entity.URL) error {
 	err := s.repo.Insert(shortURL.Link, *longURL)
+
 	if err != nil {
-		logger.GetLogger().Error("cannot insert link", zap.Error(err))
+		return err
 	}
+
+	return nil
 }
 
 func (s *URLService) GenerateShortURL() *entity.URL {
@@ -152,4 +155,13 @@ func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*en
 	}
 
 	return res, nil
+}
+
+func (s *URLService) GetShortURLByOriginalURL(longURL string) (*entity.URL, error) {
+	URLEntity, err := s.repo.FindByOriginalURL(longURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return URLEntity, nil
 }

@@ -39,7 +39,7 @@ func (app *App) Init() {
 	app.initConfig()
 	app.initLogger()
 	app.initURL()
-	app.recoveryURL()
+	//app.recoveryURL()
 	app.initDBSchemas()
 	app.initUseCases()
 	app.initHTTPServer()
@@ -98,7 +98,8 @@ func (app *App) initDBSchemas() {
 	query := `
 	CREATE TABLE IF NOT EXISTS urls (
 		short VARCHAR(255) PRIMARY KEY,
-		long TEXT NOT NULL
+		long TEXT NOT NULL,
+	    UNIQUE (long)
 	);`
 
 	_, err = db.ExecContext(ctx, query)

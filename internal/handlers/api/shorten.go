@@ -2,7 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/damirqa/shortener/cmd/config"
 	URLModels "github.com/damirqa/shortener/internal/domain/url/model"
+	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"go.uber.org/zap"
@@ -34,23 +37,32 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		shortURL := useCase.Generate(urlRequest.Link)
+		shortURL, err := useCase.Generate(urlRequest.Link)
+		if err != nil {
+			var uniqueErr *dberror.UniqueConstraintError
+			if errors.As(err, &uniqueErr) {
+				writer.WriteHeader(http.StatusConflict)
+			} else {
+				logger.GetLogger().Error(err.Error())
+				http.Error(writer, "Error generate short url", http.StatusInternalServerError)
+				return
+			}
+		}
 
-		urlResponse := URLResponse{Link: string(shortURL)}
+		fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+		urlResponse := URLResponse{Link: fullURL}
 
 		resp, err := json.Marshal(urlResponse)
 		if err != nil {
+			logger.GetLogger().Error(err.Error())
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
 
-		_, err = writer.Write(resp)
-		if err != nil {
-			http.Error(writer, "Error generate short url", http.StatusInternalServerError)
-			return
-		}
+		_, _ = writer.Write(resp)
 	}
 }
 

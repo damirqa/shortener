@@ -8,4 +8,5 @@ type URLRepository interface {
 	GetAll() (map[string]entity.URL, error)
 	InsertURLWithCorrelationID(short, long string) error
 	Close()
+	FindByOriginalURL(originalURL string) (*entity.URL, error)
 }

@@ -66,3 +66,8 @@ func (l *URLLocalRepository) GetAll() (map[string]entity.URL, error) {
 
 	return urls, nil
 }
+
+func (l *URLLocalRepository) FindByOriginalURL(originalURL string) (*entity.URL, error) {
+	//TODO implement me
+	panic("implement me")
+}

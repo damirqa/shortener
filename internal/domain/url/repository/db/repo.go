@@ -5,9 +5,11 @@ import (
 	"errors"
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
+	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
 )
 
 type URLDBRepository struct {
@@ -39,11 +41,15 @@ func New() (*URLDBRepository, error) {
 }
 
 func (l *URLDBRepository) Insert(key string, value entity.URL) error {
-	//l.urls.Store(key, value.Link)
-
 	_, err := l.pool.Exec(context.Background(), "INSERT INTO urls (short, long) VALUES ($1, $2)", key, value.Link)
+
 	if err != nil {
-		logger.GetLogger().Error(err.Error())
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return dberror.NewUniqueConstraintError(err)
+		} else {
+			return err
+		}
 	}
 
 	return nil
@@ -52,13 +58,8 @@ func (l *URLDBRepository) Insert(key string, value entity.URL) error {
 func (l *URLDBRepository) Get(key string) (entity.URL, bool, error) {
 	var link string
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	if l.pool == nil {
-		logger.GetLogger().Fatal("pool is nil")
-		return entity.URL{}, false, errors.New("pool is nil")
-	}
 
 	conn, err := l.pool.Acquire(ctx)
 	if err != nil {
@@ -109,13 +110,8 @@ func (l *URLDBRepository) GetAll() (map[string]entity.URL, error) {
 }
 
 func (l *URLDBRepository) InsertURLWithCorrelationID(short, long string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	if l.pool == nil {
-		logger.GetLogger().Fatal("pool is nil")
-		return errors.New("pool is nil")
-	}
 
 	conn, err := l.pool.Acquire(ctx)
 	if err != nil {
@@ -137,4 +133,30 @@ func (l *URLDBRepository) InsertURLWithCorrelationID(short, long string) error {
 	}
 
 	return nil
+}
+
+func (l *URLDBRepository) FindByOriginalURL(originalURL string) (*entity.URL, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	conn, err := l.pool.Acquire(ctx)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	defer conn.Release()
+
+	_, err = conn.Conn().Prepare(ctx, "selectURL", "SELECT short FROM urls WHERE long = $1")
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+	}
+
+	var short string
+	err = conn.Conn().QueryRow(ctx, "selectURL", originalURL).Scan(&short)
+	if err != nil {
+		logger.GetLogger().Error(err.Error())
+		return nil, err
+	}
+
+	return entity.New(short), nil
 }

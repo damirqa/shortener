@@ -1,11 +1,12 @@
 package url
 
 import (
-	"fmt"
+	"errors"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
 	"github.com/damirqa/shortener/internal/domain/url/model"
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
+	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 )
 
@@ -19,14 +20,26 @@ func New(service URLDomainService.BaseDomainService) *UseCase {
 	}
 }
 
-func (u UseCase) Generate(longURL string) []byte {
+func (u UseCase) Generate(longURL string) (*URLDomainEntity.URL, error) {
 	longURLEntity := URLDomainEntity.New(longURL)
 	shortURLEntity := u.service.GenerateShortURL()
-	u.service.SaveURL(shortURLEntity, longURLEntity)
+	err := u.service.SaveURL(shortURLEntity, longURLEntity)
+	if err != nil {
+		var uniqueErr *dberror.UniqueConstraintError
+		if errors.As(err, &uniqueErr) {
+			uniqueError := err
+			url, err := u.service.GetShortURLByOriginalURL(longURL)
+			if err != nil {
+				return nil, err
+			}
 
-	fullURL := fmt.Append([]byte(config.Instance.GetResultAddress()+"/"), shortURLEntity.Link)
+			return url, uniqueError
+		} else {
+			return nil, err
+		}
+	}
 
-	return fullURL
+	return shortURLEntity, nil
 }
 
 func (u UseCase) Get(shortURL string) (URLDomainEntity.URL, bool) {

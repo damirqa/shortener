@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"errors"
+	"github.com/damirqa/shortener/cmd/config"
+	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"go.uber.org/zap"
@@ -23,15 +26,27 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(r.Body)
 
-		shortURL := useCase.Generate(string(longURL))
+		shortURL, err := useCase.Generate(string(longURL))
+		if err != nil {
+			var uniqueErr *dberror.UniqueConstraintError
+			if errors.As(err, &uniqueErr) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusConflict)
+
+				fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+				_, _ = w.Write([]byte(fullURL))
+				return
+			} else {
+				logger.GetLogger().Error("Error generate short url", zap.Error(err))
+				http.Error(w, "Error generate short url", http.StatusInternalServerError)
+				return
+			}
+		}
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 
-		_, err = w.Write(shortURL)
-		if err != nil {
-			http.Error(w, "Error generate short url", http.StatusInternalServerError)
-			return
-		}
+		fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+		_, _ = w.Write([]byte(fullURL))
 	}
 }
