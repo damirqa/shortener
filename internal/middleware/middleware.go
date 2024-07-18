@@ -16,9 +16,7 @@ type LoggingResponseWriter struct {
 	size       int
 }
 
-// todo: почему лучше NewLoggingResponseWriterFunc, а не NewLoggingResponseWriter
-//
-//	я же возвращаю объект
+// todo: почему лучше NewLoggingResponseWriterFunc, а не NewLoggingResponseWriter? я же возвращаю объект
 func NewLoggingResponseWriterFunc(w http.ResponseWriter) *LoggingResponseWriter {
 	return &LoggingResponseWriter{w, http.StatusOK, 0}
 }
@@ -34,6 +32,7 @@ func (r *LoggingResponseWriter) Write(b []byte) (int, error) {
 	return bytesWritten, err
 }
 
+// todo: стоит ли разные middleware выносить в разные файлы?
 func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

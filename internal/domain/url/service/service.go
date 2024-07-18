@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/domain/url/entity"
+	"github.com/damirqa/shortener/internal/domain/url/model"
 	"github.com/damirqa/shortener/internal/domain/url/repository"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"go.uber.org/zap"
@@ -23,8 +24,14 @@ func New(repo repository.URLRepository) *URLService {
 	}
 }
 
-func (s *URLService) SaveURL(shortURL, longURL *entity.URL) {
-	s.repo.Insert(shortURL.Link, *longURL)
+func (s *URLService) SaveURL(shortURL, longURL *entity.URL) error {
+	err := s.repo.Insert(shortURL.Link, *longURL)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *URLService) GenerateShortURL() *entity.URL {
@@ -43,7 +50,10 @@ func (s *URLService) GenerateShortURL() *entity.URL {
 }
 
 func (s *URLService) Get(shortURL *entity.URL) (entity.URL, bool) {
-	longURL, exist := s.repo.Get(shortURL.Link)
+	longURL, exist, err := s.repo.Get(shortURL.Link)
+	if err != nil {
+		logger.GetLogger().Error("cannot get url from db", zap.Error(err))
+	}
 
 	return longURL, exist
 }
@@ -55,7 +65,10 @@ type URLData struct {
 }
 
 func (s *URLService) SaveToFile() {
-	urls := s.repo.GetAll()
+	urls, err := s.repo.GetAll()
+	if err != nil {
+		logger.GetLogger().Error("problem get all data from urls", zap.Error(err))
+	}
 
 	file, err := os.OpenFile(config.Instance.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -115,10 +128,40 @@ func (s *URLService) LoadFromFile() {
 		}
 
 		url := entity.New(urlData.OriginalURL)
-		s.repo.Insert(urlData.UUID, *url)
+
+		err = s.repo.Insert(urlData.UUID, *url)
+		if err != nil {
+			logger.GetLogger().Error("cannot insert link", zap.Error(err))
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
+}
+
+func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*entity.URL, error) {
+	res := make([]*entity.URL, 0, len(urls))
+
+	for _, url := range urls {
+		shortURL := s.GenerateShortURL()
+		err := s.repo.InsertURLWithCorrelationID(shortURL.Link, url.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+
+		shortURL.CorrelationID = url.CorrelationID
+		res = append(res, shortURL)
+	}
+
+	return res, nil
+}
+
+func (s *URLService) GetShortURLByOriginalURL(longURL string) (*entity.URL, error) {
+	URLEntity, err := s.repo.FindByOriginalURL(longURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return URLEntity, nil
 }

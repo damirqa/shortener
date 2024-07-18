@@ -21,6 +21,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+// todo: переписать и обновить тесты с использованием testify
 func TestGenerate(t *testing.T) {
 	cfg := config.Init()
 
