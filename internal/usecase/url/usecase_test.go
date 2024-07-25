@@ -2,6 +2,7 @@ package url_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
@@ -9,7 +10,9 @@ import (
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/handlers/api"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
@@ -41,9 +44,12 @@ func TestGenerate(t *testing.T) {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusCreated {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)
@@ -73,9 +79,12 @@ func TestGet(t *testing.T) {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusTemporaryRedirect {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusTemporaryRedirect, status)
@@ -112,9 +121,12 @@ func TestShorten(t *testing.T) {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusCreated {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)
