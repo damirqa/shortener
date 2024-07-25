@@ -6,9 +6,10 @@ import (
 )
 
 type BaseDomainService interface {
-	GenerateShortURL() *entity.URL
-	SaveURL(shortURL, longURL *entity.URL) error
-	Get(shortURL *entity.URL) (entity.URL, bool)
+	GenerateShortURL() string
+	SaveURL(URLEntity *entity.URL) error
+	Get(shortURL *entity.URL) (*entity.URL, bool)
 	CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*entity.URL, error)
 	GetShortURLByOriginalURL(longURL string) (*entity.URL, error)
+	GetAllUserLinks(userID string) ([]*entity.URL, error)
 }
