@@ -26,7 +26,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(r.Body)
 
-		shortURL, err := useCase.Generate(string(longURL))
+		URLEntity, err := useCase.Generate(string(longURL), r.Context().Value("userID").(string))
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {
@@ -42,7 +42,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 
-		fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+		fullURL := config.Instance.GetResultAddress() + "/" + URLEntity.ShortURL
 		_, _ = w.Write([]byte(fullURL))
 	}
 }

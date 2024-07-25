@@ -11,12 +11,12 @@ func ExpandURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		vars := mux.Vars(r)
 		shortURL := vars["id"]
 
-		longURL, exist := useCase.Get(shortURL)
+		URLEntity, exist := useCase.Get(shortURL, r.Context().Value("userID").(string))
 		if !exist {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
 
-		http.Redirect(w, r, longURL.Link, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, URLEntity.OriginalURL, http.StatusTemporaryRedirect)
 	}
 }

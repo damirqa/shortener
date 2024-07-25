@@ -2,7 +2,11 @@ package middleware
 
 import (
 	"compress/gzip"
+	"context"
+	"github.com/damirqa/shortener/cmd/config"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -95,5 +99,98 @@ func GzipMiddleware(next http.Handler) http.Handler {
 				logger.GetLogger().Fatal(err.Error())
 			}
 		}(request.Body)
+	})
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID string
+}
+
+func CheckTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		cookie, err := request.Cookie("token")
+		if err != nil {
+			http.Error(writer, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		tokenString := cookie.Value
+		if tokenString == "" {
+			http.Error(writer, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(config.Instance.SecretKey), nil
+		}, jwt.WithoutClaimsValidation()) // todo: по идеи надо валидировать, чтобы выдать новый только если старый истек
+
+		if err != nil {
+			http.Error(writer, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		if !token.Valid {
+			http.Error(writer, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		ctx := context.WithValue(request.Context(), "userID", claims.UserID)
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	})
+}
+
+func IssueTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		authToken := request.Header.Get("Authorization")
+		tokenString := ""
+		if authToken != "" {
+			tokenString = strings.TrimPrefix(authToken, "Bearer ")
+		}
+
+		userID := ""
+
+		if tokenString == "" {
+			userID = uuid.New().String()
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+				},
+				UserID: userID,
+			})
+
+			newTokenString, err := token.SignedString([]byte(config.Instance.SecretKey))
+			if err != nil {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			tokenString = newTokenString
+		}
+
+		cookie := http.Cookie{
+			Name:  "token",
+			Value: tokenString,
+		}
+		http.SetCookie(writer, &cookie)
+		writer.Header().Set("Authorization", "Bearer "+tokenString)
+
+		if userID == "" {
+			claims := &Claims{}
+			_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				return []byte(config.Instance.SecretKey), nil
+			}, jwt.WithoutClaimsValidation()) // todo: по идеи надо валидировать, чтобы выдать новый только если старый истек
+
+			if err != nil {
+				http.Error(writer, "Forbidden", http.StatusForbidden)
+				return
+			}
+
+			userID = claims.UserID
+		}
+
+		ctx := context.WithValue(request.Context(), "userID", userID)
+		next.ServeHTTP(writer, request.WithContext(ctx))
 	})
 }

@@ -24,9 +24,8 @@ func New(repo repository.URLRepository) *URLService {
 	}
 }
 
-func (s *URLService) SaveURL(shortURL, longURL *entity.URL) error {
-	err := s.repo.Insert(shortURL.Link, *longURL)
-
+func (s *URLService) SaveURL(URLEntity *entity.URL) error {
+	err := s.repo.Insert(URLEntity)
 	if err != nil {
 		return err
 	}
@@ -34,7 +33,7 @@ func (s *URLService) SaveURL(shortURL, longURL *entity.URL) error {
 	return nil
 }
 
-func (s *URLService) GenerateShortURL() *entity.URL {
+func (s *URLService) GenerateShortURL() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, 6)
 	for i := range b {
@@ -46,11 +45,11 @@ func (s *URLService) GenerateShortURL() *entity.URL {
 		b[i] = letters[index.Int64()]
 	}
 
-	return entity.New(string(b))
+	return string(b)
 }
 
-func (s *URLService) Get(shortURL *entity.URL) (entity.URL, bool) {
-	longURL, exist, err := s.repo.Get(shortURL.Link)
+func (s *URLService) Get(URLEntity *entity.URL) (*entity.URL, bool) {
+	longURL, exist, err := s.repo.Get(URLEntity.ShortURL)
 	if err != nil {
 		logger.GetLogger().Error("cannot get url from db", zap.Error(err))
 	}
@@ -83,11 +82,12 @@ func (s *URLService) SaveToFile() {
 	}(file)
 
 	encoder := json.NewEncoder(file)
-	for key, URLEntity := range urls {
+	for _, URLEntity := range urls {
 		urlData := URLData{
-			UUID:        key,
-			ShortURL:    key,
-			OriginalURL: URLEntity.Link,
+			UUID:        URLEntity.ShortURL,
+			ShortURL:    URLEntity.ShortURL,
+			OriginalURL: URLEntity.OriginalURL,
+			// todo: может добавить userID?
 		}
 		if err := encoder.Encode(&urlData); err != nil {
 			logger.GetLogger().Error("Error encoding url data", zap.Error(err))
@@ -127,9 +127,9 @@ func (s *URLService) LoadFromFile() {
 			logger.GetLogger().Error(err.Error())
 		}
 
-		url := entity.New(urlData.OriginalURL)
+		url := entity.URL{ShortURL: urlData.ShortURL, OriginalURL: urlData.OriginalURL}
 
-		err = s.repo.Insert(urlData.UUID, *url)
+		err = s.repo.Insert(&url)
 		if err != nil {
 			logger.GetLogger().Error("cannot insert link", zap.Error(err))
 		}
@@ -144,14 +144,16 @@ func (s *URLService) CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*en
 	res := make([]*entity.URL, 0, len(urls))
 
 	for _, url := range urls {
+		// todo: здесь нужно проверять на существующие ссылки, поломает ли это тесты?
 		shortURL := s.GenerateShortURL()
-		err := s.repo.InsertURLWithCorrelationID(shortURL.Link, url.OriginalURL)
+		u := entity.URL{ShortURL: shortURL, OriginalURL: url.OriginalURL}
+		err := s.repo.InsertURLWithCorrelationID(u.ShortURL, u.OriginalURL)
 		if err != nil {
 			return nil, err
 		}
 
-		shortURL.CorrelationID = url.CorrelationID
-		res = append(res, shortURL)
+		u.CorrelationID = url.CorrelationID
+		res = append(res, &u)
 	}
 
 	return res, nil
@@ -164,4 +166,13 @@ func (s *URLService) GetShortURLByOriginalURL(longURL string) (*entity.URL, erro
 	}
 
 	return URLEntity, nil
+}
+
+func (s *URLService) GetAllUserLinks(userID string) ([]*entity.URL, error) {
+	urls, err := s.repo.GetAllUserLinks(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return urls, nil
 }

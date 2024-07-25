@@ -36,7 +36,9 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		shortURL, err := useCase.Generate(urlRequest.Link)
+		userID := request.Context().Value("userID").(string)
+
+		URLEntity, err := useCase.Generate(urlRequest.Link, userID)
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {
@@ -49,7 +51,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}
 
-		fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+		fullURL := config.Instance.GetResultAddress() + "/" + URLEntity.ShortURL
 		urlResponse := URLResponse{Link: fullURL}
 
 		resp, err := json.Marshal(urlResponse)
@@ -66,7 +68,6 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	}
 }
 
-// todo: принято ли в одном хендлере обрабатывать несколько запросов?
 func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlsRequest []URLModels.URLRequestWithCorrelationID
@@ -82,13 +83,19 @@ func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		shortURLs, err := useCase.GenerateBatch(urlsRequest)
+		URLEntities, err := useCase.GenerateBatch(urlsRequest)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		resp, err := json.Marshal(shortURLs)
+		var URLSResponseWithCorrelationID []URLModels.URLResponseWithCorrelationID
+		for _, url := range URLEntities {
+			URLResponseWithCorrelationID := URLModels.URLResponseWithCorrelationID{CorrelationID: url.CorrelationID, ShortURL: config.Instance.GetResultAddress() + "/" + url.ShortURL}
+			URLSResponseWithCorrelationID = append(URLSResponseWithCorrelationID, URLResponseWithCorrelationID)
+		}
+
+		resp, err := json.Marshal(URLSResponseWithCorrelationID)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
