@@ -109,7 +109,7 @@ type Claims struct {
 
 type contextUserKey string
 
-const userIDKey contextUserKey = "userID"
+const UserIDKey contextUserKey = "userID"
 
 func CheckTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -140,7 +140,7 @@ func CheckTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(request.Context(), userIDKey, claims.UserID)
+		ctx := context.WithValue(request.Context(), UserIDKey, claims.UserID)
 		next.ServeHTTP(writer, request.WithContext(ctx))
 	})
 }
@@ -194,7 +194,7 @@ func IssueTokenMiddleware(next http.Handler) http.Handler {
 			userID = claims.UserID
 		}
 
-		ctx := context.WithValue(request.Context(), userIDKey, userID)
+		ctx := context.WithValue(request.Context(), UserIDKey, userID)
 		next.ServeHTTP(writer, request.WithContext(ctx))
 	})
 }

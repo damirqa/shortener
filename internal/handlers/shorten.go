@@ -5,6 +5,7 @@ import (
 	"github.com/damirqa/shortener/cmd/config"
 	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"go.uber.org/zap"
 	"io"
@@ -26,7 +27,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(r.Body)
 
-		URLEntity, err := useCase.Generate(string(longURL), r.Context().Value("userID").(string))
+		URLEntity, err := useCase.Generate(string(longURL), r.Context().Value(middleware.UserIDKey).(string))
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {

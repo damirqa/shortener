@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"github.com/damirqa/shortener/internal/domain/url/model"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"net/http"
 )
 
 func GetAllUserLinks(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		userID, ok := request.Context().Value("userID").(string)
+		userID, ok := request.Context().Value(middleware.UserIDKey).(string)
 		if !ok {
 			http.Error(writer, "Forbidden", http.StatusForbidden)
 			return

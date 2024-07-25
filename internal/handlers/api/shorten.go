@@ -7,6 +7,7 @@ import (
 	URLModels "github.com/damirqa/shortener/internal/domain/url/model"
 	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
 	"io"
 	"net/http"
@@ -36,7 +37,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		userID := request.Context().Value("userID").(string)
+		userID := request.Context().Value(middleware.UserIDKey).(string)
 
 		URLEntity, err := useCase.Generate(urlRequest.Link, userID)
 		if err != nil {
