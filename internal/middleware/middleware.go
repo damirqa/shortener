@@ -115,13 +115,13 @@ func CheckTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		cookie, err := request.Cookie("token")
 		if err != nil {
-			http.Error(writer, "Forbidden", http.StatusForbidden)
+			http.Error(writer, "Not authorized", http.StatusUnauthorized)
 			return
 		}
 
 		tokenString := cookie.Value
 		if tokenString == "" {
-			http.Error(writer, "Forbidden", http.StatusForbidden)
+			http.Error(writer, "Not authorized", http.StatusUnauthorized)
 			return
 		}
 
@@ -131,12 +131,12 @@ func CheckTokenMiddleware(next http.Handler) http.Handler {
 		}, jwt.WithoutClaimsValidation()) // todo: по идеи надо валидировать, чтобы выдать новый только если старый истек
 
 		if err != nil {
-			http.Error(writer, "Forbidden", http.StatusForbidden)
+			http.Error(writer, "Not authorized", http.StatusUnauthorized)
 			return
 		}
 
 		if !token.Valid {
-			http.Error(writer, "Forbidden", http.StatusForbidden)
+			http.Error(writer, "Not authorized", http.StatusUnauthorized)
 			return
 		}
 
