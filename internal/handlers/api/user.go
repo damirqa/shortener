@@ -37,7 +37,7 @@ func GetAllUserLinks(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusCreated)
+		writer.WriteHeader(http.StatusOK)
 
 		_, _ = writer.Write(resp)
 	}

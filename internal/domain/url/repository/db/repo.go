@@ -191,7 +191,8 @@ func (l *URLDBRepository) GetAllUserLinks(userID string) ([]*entity.URL, error) 
 		if err := rows.Scan(&short, &long); err != nil {
 			return nil, err
 		}
-		url := entity.New(short, long, userID)
+
+		url := entity.New(config.Instance.GetResultAddress()+"/"+short, long, userID)
 		urls = append(urls, url)
 	}
 
