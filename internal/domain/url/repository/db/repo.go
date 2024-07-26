@@ -59,7 +59,7 @@ func (l *URLDBRepository) Insert(URLEntity *entity.URL) error {
 
 func (l *URLDBRepository) Get(key string) (*entity.URL, bool, error) {
 	var link string
-	var is_deleted bool
+	var isDeleted bool
 
 	// todo: если использовать context.WithTimeout(context.Background(), 5*time.Second), то следующие запросы (в целом) не будут выполняться, почему?
 
@@ -80,14 +80,14 @@ func (l *URLDBRepository) Get(key string) (*entity.URL, bool, error) {
 		logger.GetLogger().Error(err.Error())
 	}
 
-	err = conn.Conn().QueryRow(ctx, "selectURL", key).Scan(&link, &is_deleted)
+	err = conn.Conn().QueryRow(ctx, "selectURL", key).Scan(&link, &isDeleted)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 
 		return &entity.URL{}, false, err
 	}
 
-	url := entity.URL{ShortURL: key, OriginalURL: link, IsDeleted: is_deleted}
+	url := entity.URL{ShortURL: key, OriginalURL: link, IsDeleted: isDeleted}
 	return &url, true, nil
 }
 
