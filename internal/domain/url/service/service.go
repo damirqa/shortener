@@ -176,3 +176,12 @@ func (s *URLService) GetAllUserLinks(userID string) ([]*entity.URL, error) {
 
 	return urls, nil
 }
+
+func (s *URLService) DeleteUserLinks(userID string, shortURLs []string) error {
+	err := s.repo.DeleteUserLinks(userID, shortURLs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -18,6 +18,11 @@ func ExpandURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			return
 		}
 
+		if URLEntity.IsDeleted {
+			http.Error(w, "URL deleted", http.StatusGone)
+			return
+		}
+
 		http.Redirect(w, r, URLEntity.OriginalURL, http.StatusTemporaryRedirect)
 	}
 }

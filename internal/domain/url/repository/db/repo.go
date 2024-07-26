@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"sync"
 )
 
 type URLDBRepository struct {
@@ -58,6 +59,7 @@ func (l *URLDBRepository) Insert(URLEntity *entity.URL) error {
 
 func (l *URLDBRepository) Get(key string) (*entity.URL, bool, error) {
 	var link string
+	var is_deleted bool
 
 	// todo: если использовать context.WithTimeout(context.Background(), 5*time.Second), то следующие запросы (в целом) не будут выполняться, почему?
 
@@ -73,19 +75,19 @@ func (l *URLDBRepository) Get(key string) (*entity.URL, bool, error) {
 		conn.Release()
 	}()
 
-	_, err = conn.Conn().Prepare(ctx, "selectURL", "SELECT long FROM urls WHERE short = $1")
+	_, err = conn.Conn().Prepare(ctx, "selectURL", "SELECT long, is_deleted FROM urls WHERE short = $1")
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 	}
 
-	err = conn.Conn().QueryRow(ctx, "selectURL", key).Scan(&link)
+	err = conn.Conn().QueryRow(ctx, "selectURL", key).Scan(&link, &is_deleted)
 	if err != nil {
 		logger.GetLogger().Error(err.Error())
 
 		return &entity.URL{}, false, err
 	}
 
-	url := entity.URL{ShortURL: key, OriginalURL: link}
+	url := entity.URL{ShortURL: key, OriginalURL: link, IsDeleted: is_deleted}
 	return &url, true, nil
 }
 
@@ -201,4 +203,46 @@ func (l *URLDBRepository) GetAllUserLinks(userID string) ([]*entity.URL, error) 
 	}
 
 	return urls, nil
+}
+
+func (l *URLDBRepository) DeleteUserLinks(userID string, shortURLs []string) error {
+	ErrorsCh := make(chan error, len(shortURLs))
+	var wg sync.WaitGroup
+
+	for _, url := range shortURLs {
+		wg.Add(1)
+
+		url := url
+		go func() {
+			defer wg.Done()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			conn, err := l.pool.Acquire(ctx)
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+			}
+
+			defer conn.Release()
+
+			_, err = conn.Conn().Prepare(ctx, "deleteURL", "UPDATE urls SET is_deleted = true WHERE user_id = $1 AND short = $2")
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+			}
+
+			_, err = conn.Conn().Exec(ctx, "deleteURL", userID, url)
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+				ErrorsCh <- err
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(ErrorsCh)
+	}()
+
+	return nil
 }

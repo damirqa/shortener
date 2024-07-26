@@ -6,6 +6,7 @@ import (
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"io"
 	"net/http"
 )
 
@@ -40,5 +41,41 @@ func GetAllUserLinks(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		writer.WriteHeader(http.StatusOK)
 
 		_, _ = writer.Write(resp)
+	}
+}
+
+type DeleteURLsRequest []string
+
+func DeleteUserLinks(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		userID, ok := request.Context().Value(middleware.UserIDKey).(string)
+		if !ok {
+			http.Error(writer, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		var deleteURLsRequest DeleteURLsRequest
+		if err := json.NewDecoder(request.Body).Decode(&deleteURLsRequest); err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logger.GetLogger().Error(err.Error())
+			}
+		}(request.Body)
+
+		go func() {
+			err := useCase.DeleteUserLinks(userID, deleteURLsRequest)
+			if err != nil {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+				logger.GetLogger().Error(err.Error())
+				return
+			}
+		}()
+
+		writer.WriteHeader(http.StatusAccepted)
 	}
 }

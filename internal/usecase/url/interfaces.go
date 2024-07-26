@@ -10,4 +10,5 @@ type UseCaseInterface interface {
 	Get(shortURL, userID string) (*entity.URL, bool)
 	GenerateBatch(request []model.URLRequestWithCorrelationID) ([]*entity.URL, error)
 	GetAllUserLinks(userID string) ([]*entity.URL, error)
+	DeleteUserLinks(userID string, shortURLs []string) error
 }

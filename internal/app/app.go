@@ -100,6 +100,7 @@ func (app *App) initDBSchemas() {
 		short VARCHAR(255) PRIMARY KEY,
 		long TEXT NOT NULL,
 	    user_id VARCHAR NULL,
+	    is_deleted BOOLEAN DEFAULT FALSE,
 	    UNIQUE (long)
 	);`
 

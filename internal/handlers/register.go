@@ -17,4 +17,5 @@ func RegisterHandlers(router *mux.Router, useCases *usecase.UseCases) {
 
 func RegisterUserHandlers(router *mux.Router, useCases *usecase.UseCases) {
 	router.HandleFunc("/urls", api.GetAllUserLinks(useCases.URLUseCase)).Methods("GET")
+	router.HandleFunc("/urls", api.DeleteUserLinks(useCases.URLUseCase)).Methods("DELETE")
 }

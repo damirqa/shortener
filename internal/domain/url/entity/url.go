@@ -5,6 +5,7 @@ type URL struct {
 	OriginalURL   string
 	UserID        string
 	CorrelationID string
+	IsDeleted     bool
 }
 
 func New(shortURL, longURL, userID string) *URL {

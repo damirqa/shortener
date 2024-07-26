@@ -88,3 +88,12 @@ func (u UseCase) GetAllUserLinks(userID string) ([]*URLDomainEntity.URL, error) 
 
 	return urls, nil
 }
+
+func (u UseCase) DeleteUserLinks(userID string, shortURLs []string) error {
+	err := u.service.DeleteUserLinks(userID, shortURLs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

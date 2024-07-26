@@ -12,4 +12,5 @@ type BaseDomainService interface {
 	CreateURLs(urls []model.URLRequestWithCorrelationID) ([]*entity.URL, error)
 	GetShortURLByOriginalURL(longURL string) (*entity.URL, error)
 	GetAllUserLinks(userID string) ([]*entity.URL, error)
+	DeleteUserLinks(userID string, shortURLs []string) error
 }

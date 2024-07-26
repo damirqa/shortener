@@ -77,3 +77,8 @@ func (l *URLLocalRepository) GetAllUserLinks(userID string) ([]*entity.URL, erro
 	//TODO implement me
 	panic("implement me")
 }
+
+func (l *URLLocalRepository) DeleteUserLinks(userID string, shortURLs []string) error {
+	//TODO implement me
+	panic("implement me")
+}

@@ -10,4 +10,5 @@ type URLRepository interface {
 	Close()
 	FindByOriginalURL(originalURL string) (*entity.URL, error)
 	GetAllUserLinks(userID string) ([]*entity.URL, error)
+	DeleteUserLinks(userID string, shortURLs []string) error
 }
