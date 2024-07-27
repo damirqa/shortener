@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/damirqa/shortener/cmd/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -24,8 +26,12 @@ type URLResponse struct {
 func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlRequest URLRequest
-		if err := json.NewDecoder(request.Body).Decode(&urlRequest); err != nil {
-			// todo: как залогировать request.Body, ведь это же поток
+
+		var bodyBuffer bytes.Buffer
+		reader := io.TeeReader(request.Body, &bodyBuffer)
+
+		if err := json.NewDecoder(reader).Decode(&urlRequest); err != nil {
+			logger.GetLogger().Error("Error decoding request body: %v. Body: %s", zap.Error(err), zap.String("body", bodyBuffer.String()))
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
