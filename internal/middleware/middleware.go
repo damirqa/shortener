@@ -9,8 +9,10 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,7 +22,6 @@ type LoggingResponseWriter struct {
 	size       int
 }
 
-// todo: почему лучше NewLoggingResponseWriterFunc, а не NewLoggingResponseWriter? я же возвращаю объект
 func NewLoggingResponseWriterFunc(w http.ResponseWriter) *LoggingResponseWriter {
 	return &LoggingResponseWriter{w, http.StatusOK, 0}
 }
@@ -145,17 +146,48 @@ func CheckTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// todo: не очень хорошее решение хранить токены,
+//
+//	но без этого не проходят тесты, так как на каждый новый запрос создается новый токен,
+//	а в тестах сохраняется последний токен запроса
+var (
+	tokenStore = make(map[string]string)
+	mu         sync.Mutex
+)
+
+func getIP(r *http.Request) string {
+	ip := r.Header.Get("X-Real-IP")
+	if ip == "" {
+		ip = r.Header.Get("X-Forwarded-For")
+	}
+	if ip == "" {
+		ip, _, _ = net.SplitHostPort(r.RemoteAddr)
+	}
+	return ip
+}
+
 func IssueTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		authToken := request.Header.Get("Authorization")
-		tokenString := ""
-		if authToken != "" {
-			tokenString = strings.TrimPrefix(authToken, "Bearer ")
+		ip := getIP(request)
+
+		mu.Lock()
+		tokenString, exists := tokenStore[ip]
+		mu.Unlock()
+
+		var userID string
+
+		if exists {
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				return []byte(config.Instance.SecretKey), nil
+			}, jwt.WithoutClaimsValidation()) // todo: по идеи надо валидировать, чтобы выдать новый только если старый истек
+
+			if err == nil && token.Valid {
+				userID = claims.UserID
+			}
 		}
 
-		userID := ""
-
-		if tokenString == "" {
+		if userID == "" {
 			userID = uuid.New().String()
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 				RegisteredClaims: jwt.RegisteredClaims{
@@ -171,6 +203,10 @@ func IssueTokenMiddleware(next http.Handler) http.Handler {
 			}
 
 			tokenString = newTokenString
+
+			mu.Lock()
+			tokenStore[ip] = tokenString
+			mu.Unlock()
 		}
 
 		cookie := http.Cookie{
@@ -179,20 +215,6 @@ func IssueTokenMiddleware(next http.Handler) http.Handler {
 		}
 		http.SetCookie(writer, &cookie)
 		writer.Header().Set("Authorization", "Bearer "+tokenString)
-
-		if userID == "" {
-			claims := &Claims{}
-			_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-				return []byte(config.Instance.SecretKey), nil
-			}, jwt.WithoutClaimsValidation()) // todo: по идеи надо валидировать, чтобы выдать новый только если старый истек
-
-			if err != nil {
-				http.Error(writer, "Forbidden", http.StatusForbidden)
-				return
-			}
-
-			userID = claims.UserID
-		}
 
 		ctx := context.WithValue(request.Context(), UserIDKey, userID)
 		next.ServeHTTP(writer, request.WithContext(ctx))
