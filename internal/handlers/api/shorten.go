@@ -46,6 +46,9 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 		userID := request.Context().Value(middleware.UserIDKey).(string)
 
 		URLEntity, err := useCase.Generate(urlRequest.Link, userID)
+
+		// todo: как избавится от двойной проверки в handler и usecase?
+		//		 на уровне handler вызвать другой usecase если первый вернул ошибку
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {

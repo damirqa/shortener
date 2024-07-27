@@ -1,5 +1,7 @@
 package model
 
+// todo: наверное все что связано с response и request лучше перенести в handlers
+
 type URLRequestWithCorrelationID struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
