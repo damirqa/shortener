@@ -6,6 +6,7 @@ import (
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
 	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -67,15 +68,17 @@ func DeleteUserLinks(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
+		delChan := make(chan error, 1)
 		go func() {
-			err := useCase.DeleteUserLinks(userID, deleteURLsRequest)
-			if err != nil {
-				http.Error(writer, "Internal server error", http.StatusInternalServerError)
-				logger.GetLogger().Error(err.Error())
-				return
-			}
+			delChan <- useCase.DeleteUserLinks(userID, deleteURLsRequest)
 		}()
 
 		writer.WriteHeader(http.StatusAccepted)
+
+		go func() {
+			if err := <-delChan; err != nil {
+				logger.GetLogger().Error("Error deleting user links", zap.Error(err))
+			}
+		}()
 	}
 }
