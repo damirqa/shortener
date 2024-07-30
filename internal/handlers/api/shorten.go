@@ -1,13 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/damirqa/shortener/cmd/config"
 	URLModels "github.com/damirqa/shortener/internal/domain/url/model"
 	dberror "github.com/damirqa/shortener/internal/error"
 	"github.com/damirqa/shortener/internal/infrastructure/logger"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -23,8 +26,12 @@ type URLResponse struct {
 func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlRequest URLRequest
-		if err := json.NewDecoder(request.Body).Decode(&urlRequest); err != nil {
-			// todo: как залогировать request.Body, ведь это же поток
+
+		var bodyBuffer bytes.Buffer
+		reader := io.TeeReader(request.Body, &bodyBuffer)
+
+		if err := json.NewDecoder(reader).Decode(&urlRequest); err != nil {
+			logger.GetLogger().Error("Error decoding request body: %v. Body: %s", zap.Error(err), zap.String("body", bodyBuffer.String()))
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -36,7 +43,12 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		shortURL, err := useCase.Generate(urlRequest.Link)
+		userID := request.Context().Value(middleware.UserIDKey).(string)
+
+		URLEntity, err := useCase.Generate(urlRequest.Link, userID)
+
+		// todo: как избавится от двойной проверки в handler и usecase?
+		//		 на уровне handler вызвать другой usecase если первый вернул ошибку
 		if err != nil {
 			var uniqueErr *dberror.UniqueConstraintError
 			if errors.As(err, &uniqueErr) {
@@ -49,7 +61,7 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}
 
-		fullURL := config.Instance.GetResultAddress() + "/" + shortURL.Link
+		fullURL := config.Instance.GetResultAddress() + "/" + URLEntity.ShortURL
 		urlResponse := URLResponse{Link: fullURL}
 
 		resp, err := json.Marshal(urlResponse)
@@ -66,7 +78,6 @@ func ShortenURL(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	}
 }
 
-// todo: принято ли в одном хендлере обрабатывать несколько запросов?
 func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var urlsRequest []URLModels.URLRequestWithCorrelationID
@@ -82,13 +93,19 @@ func ShortenURLSBatch(useCase URLUseCase.UseCaseInterface) http.HandlerFunc {
 			}
 		}(request.Body)
 
-		shortURLs, err := useCase.GenerateBatch(urlsRequest)
+		URLEntities, err := useCase.GenerateBatch(urlsRequest)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		resp, err := json.Marshal(shortURLs)
+		var URLSResponseWithCorrelationID []URLModels.URLResponseWithCorrelationID
+		for _, url := range URLEntities {
+			URLResponseWithCorrelationID := URLModels.URLResponseWithCorrelationID{CorrelationID: url.CorrelationID, ShortURL: config.Instance.GetResultAddress() + "/" + url.ShortURL}
+			URLSResponseWithCorrelationID = append(URLSResponseWithCorrelationID, URLResponseWithCorrelationID)
+		}
+
+		resp, err := json.Marshal(URLSResponseWithCorrelationID)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return

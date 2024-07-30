@@ -2,6 +2,7 @@ package url_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/damirqa/shortener/cmd/config"
 	URLDomainEntity "github.com/damirqa/shortener/internal/domain/url/entity"
@@ -9,7 +10,9 @@ import (
 	URLDomainService "github.com/damirqa/shortener/internal/domain/url/service"
 	"github.com/damirqa/shortener/internal/handlers"
 	"github.com/damirqa/shortener/internal/handlers/api"
+	"github.com/damirqa/shortener/internal/middleware"
 	URLUseCase "github.com/damirqa/shortener/internal/usecase/url"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
@@ -41,9 +44,12 @@ func TestGenerate(t *testing.T) {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusCreated {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)
@@ -57,9 +63,9 @@ func TestGet(t *testing.T) {
 	service := URLDomainService.New(repo)
 	useCase := URLUseCase.New(service)
 
-	longURL := URLDomainEntity.New("http://detnkjoidndxr.ru/juc2om4xf")
 	shortURL := service.GenerateShortURL()
-	repo.Insert(shortURL.Link, *longURL)
+	URLEntity := URLDomainEntity.URL{ShortURL: shortURL, OriginalURL: "http://detnkjoidndxr.ru/juc2om4xf"}
+	repo.Insert(&URLEntity)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/{id}", handlers.ExpandURL(useCase)).Methods("GET")
@@ -68,21 +74,24 @@ func TestGet(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetAddress()+"/"+shortURL.Link, nil)
+	req, err := http.NewRequest(http.MethodGet, "http://"+cfg.GetAddress()+"/"+URLEntity.ShortURL, nil)
 	if err != nil {
 		t.Fatalf("Ошибка при попытке сделать запрос для получения полного URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusTemporaryRedirect {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusTemporaryRedirect, status)
 	}
 
-	if location := res.Header().Get("Location"); location != longURL.Link {
-		t.Errorf("Ожидался Location %s, но получен %s", longURL, location)
+	if location := res.Header().Get("Location"); location != URLEntity.OriginalURL {
+		t.Errorf("Ожидался Location %s, но получен %s", URLEntity.OriginalURL, location)
 	}
 }
 
@@ -112,9 +121,12 @@ func TestShorten(t *testing.T) {
 		t.Fatalf("Ошибка при попытке сделать запрос для сокращения URL. Ошибка: %v", err)
 	}
 
+	userID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+
 	res := httptest.NewRecorder()
 
-	router.ServeHTTP(res, req)
+	router.ServeHTTP(res, req.WithContext(ctx))
 
 	if status := res.Code; status != http.StatusCreated {
 		t.Errorf("Ожидался статус код %d, но получен %d", http.StatusCreated, status)

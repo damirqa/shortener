@@ -99,6 +99,8 @@ func (app *App) initDBSchemas() {
 	CREATE TABLE IF NOT EXISTS urls (
 		short VARCHAR(255) PRIMARY KEY,
 		long TEXT NOT NULL,
+	    user_id VARCHAR NULL,
+	    is_deleted BOOLEAN DEFAULT FALSE,
 	    UNIQUE (long)
 	);`
 
@@ -121,7 +123,13 @@ func (app *App) initHTTPServer() {
 	router := mux.NewRouter()
 	router.Use(middleware.LogMiddleware)
 	router.Use(middleware.GzipMiddleware)
+	router.Use(middleware.IssueTokenMiddleware)
+
 	handlers.RegisterHandlers(router, app.UseCases)
+
+	apiUserRouter := router.PathPrefix("/api/user").Subrouter()
+	apiUserRouter.Use(middleware.CheckTokenMiddleware)
+	handlers.RegisterUserHandlers(apiUserRouter, app.UseCases)
 
 	app.httpServer = &http.Server{
 		Addr:    config.Instance.GetAddress(),

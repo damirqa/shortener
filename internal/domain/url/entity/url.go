@@ -1,12 +1,17 @@
 package entity
 
 type URL struct {
-	Link          string
+	ShortURL      string
+	OriginalURL   string
+	UserID        string
 	CorrelationID string
+	IsDeleted     bool
 }
 
-func New(link string) *URL {
+func New(shortURL, longURL, userID string) *URL {
 	return &URL{
-		Link: link,
+		ShortURL:    shortURL,
+		OriginalURL: longURL,
+		UserID:      userID,
 	}
 }
