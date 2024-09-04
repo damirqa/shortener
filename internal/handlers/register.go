@@ -14,3 +14,8 @@ func RegisterHandlers(router *mux.Router, useCases *usecase.UseCases) {
 	router.HandleFunc("/api/shorten", api.ShortenURL(useCases.URLUseCase)).Methods("POST")
 	router.HandleFunc("/api/shorten/batch", api.ShortenURLSBatch(useCases.URLUseCase)).Methods("POST")
 }
+
+func RegisterUserHandlers(router *mux.Router, useCases *usecase.UseCases) {
+	router.HandleFunc("/urls", api.GetAllUserLinks(useCases.URLUseCase)).Methods("GET")
+	router.HandleFunc("/urls", api.DeleteUserLinks(useCases.URLUseCase)).Methods("DELETE")
+}
